@@ -1,0 +1,36 @@
+global:
+  resolve_timeout: 5m
+  smtp_from: alerts@eco-ia.local
+  smtp_smarthost: "${SMTP_HOST}:${SMTP_PORT}"
+  smtp_auth_username: "${SMTP_USER}"
+  smtp_auth_password: "${SMTP_PASSWORD}"
+
+route:
+  receiver: default
+  group_by: [alertname, severity]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - match:
+        severity: critical
+      receiver: critical-alerts
+      repeat_interval: 1h
+
+receivers:
+  - name: default
+    email_configs:
+      - to: "${ALERT_EMAILS}"
+        send_resolved: true
+  - name: critical-alerts
+    email_configs:
+      - to: "${ALERT_EMAILS}"
+        send_resolved: true
+        subject: "[CRITICAL] ECO-IA: {{ .GroupLabels.alertname }}"
+
+inhibit_rules:
+  - source_match:
+      severity: critical
+    target_match:
+      severity: warning
+    equal: [alertname]
