@@ -1,0 +1,75 @@
+orchestrator:
+  heartbeat_interval: 30
+  health_check_interval: 60
+  report_interval: 3600
+  llm:
+    provider: openai
+    model: gpt-4o-mini
+    temperature: 0.7
+    max_tokens: 2048
+
+monetization:
+  billing:
+    currency: usd
+    trial_days: 14
+  pricing:
+    demand_multiplier: 1.0
+    update_interval: 300
+  clients:
+    upsell_check_interval: 86400
+
+devops:
+  auto_heal:
+    check_interval: 60
+    max_restart_attempts: 3
+    services:
+      - eco-ia-api
+      - eco-ia-worker
+      - eco-ia-beat
+      - eco-ia-postgres
+      - eco-ia-redis
+      - eco-ia-nginx
+      - eco-ia-prometheus
+      - eco-ia-grafana
+  backup:
+    interval: 3600
+    retention_days: 30
+    local_paths:
+      - /opt/eco-ia/data
+      - /opt/eco-ia/config
+  updates:
+    security_update_interval: 86400
+
+resources:
+  optimizer:
+    cpu_threshold: 85.0
+    ram_threshold: 90.0
+  scaler:
+    min_replicas: 1
+    max_replicas: 10
+    scale_up_cpu_threshold: 70.0
+    scale_down_cpu_threshold: 30.0
+  cleaner:
+    max_log_age_days: 7
+    max_log_size_mb: 100.0
+    cleanup_interval: 86400
+
+security:
+  firewall:
+    allowed_ports: [22, 80, 443, 8000, 9090, 3000]
+    block_on_intrusion: true
+  intrusion_detector:
+    threshold_minutes: 5
+    brute_force_threshold: 10
+    check_interval: 300
+  auditor:
+    audit_interval: 3600
+
+analytics:
+  reporter:
+    daily_report_hour: 8
+  predictor:
+    window_size: 20
+    z_score_threshold: 2.5
+  dashboard:
+    snapshot_interval: 60
