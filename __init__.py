@@ -1,5 +1,5 @@
-"""📊 Analytics Agent."""
-from .dashboard import DashboardData
-from .predictor import Predictor
-from .reporter import Reporter
-__all__ = ["DashboardData", "Predictor", "Reporter"]
+"""💰 Monetization Agent."""
+from .billing import BillingManager
+from .clients import ClientManager
+from .pricing import PricingEngine
+__all__ = ["BillingManager", "ClientManager", "PricingEngine"]

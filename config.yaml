@@ -1,0 +1,10 @@
+name: orchestrator
+description: "Master coordinator for all ECO-IA agents"
+heartbeat_interval: 30
+health_check_interval: 60
+report_interval: 3600
+llm:
+  provider: openai
+  model: gpt-4o-mini
+  temperature: 0.7
+  max_tokens: 2048
