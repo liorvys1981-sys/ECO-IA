@@ -60,6 +60,7 @@ ECO-IA/
 ├── main.py
 ├── orchestrator.py
 ├── agent_base.py
+├── base_agent.py
 ├── communication.py
 ├── celery_app.py
 ├── billing.py
