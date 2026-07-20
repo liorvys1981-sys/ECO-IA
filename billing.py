@@ -1,9 +1,8 @@
 """Billing management via Stripe API."""
 
-import os
 import logging
+import os
 from typing import Any
-
 
 logger = logging.getLogger(__name__)
 
