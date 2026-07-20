@@ -1,7 +1,8 @@
 """LLM connector supporting OpenAI and Ollama."""
 
 import logging
-import os
+
+from settings import LLM_MODEL, OLLAMA_BASE_URL, OPENAI_API_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -20,13 +21,13 @@ class LLMConnector:
         self.temperature = temperature
         self.max_tokens = max_tokens
         if self.provider == "openai":
-            self.model = model or "gpt-4o-mini"
-            self.api_key = api_key or os.getenv("OPENAI_API_KEY", "")
+            self.model = model or LLM_MODEL
+            self.api_key = api_key or OPENAI_API_KEY
             self.base_url = base_url or "https://api.openai.com/v1"
         elif self.provider == "ollama":
             self.model = model or "llama3"
             self.api_key = "ollama"
-            self.base_url = base_url or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+            self.base_url = base_url or OLLAMA_BASE_URL
         else:
             raise ValueError(f"Unsupported LLM provider: {provider!r}")
 

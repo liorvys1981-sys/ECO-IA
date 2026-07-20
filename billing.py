@@ -1,8 +1,9 @@
 """Billing management via Stripe API."""
 
 import logging
-import os
 from typing import Any
+
+from settings import STRIPE_SECRET_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +12,7 @@ class BillingManager:
     """Handles automatic invoicing and payment collection through Stripe."""
 
     def __init__(self, stripe_api_key: str | None = None) -> None:
-        self._api_key = stripe_api_key or os.getenv("STRIPE_SECRET_KEY", "")
+        self._api_key = stripe_api_key or STRIPE_SECRET_KEY
         self._stripe_available = False
         self._invoices: list[dict[str, Any]] = []
         self._init_stripe()
@@ -29,10 +30,6 @@ class BillingManager:
             logger.info("Stripe initialised.")
         except ImportError:
             logger.warning("stripe package not installed; billing in simulation mode.")
-
-    # ------------------------------------------------------------------
-    # Customers
-    # ------------------------------------------------------------------
 
     async def create_customer(
         self,
@@ -60,10 +57,6 @@ class BillingManager:
         if not self._stripe_available:
             return self._simulate("get_customer", customer_id=customer_id)
         return dict(self._stripe.Customer.retrieve(customer_id))
-
-    # ------------------------------------------------------------------
-    # Subscriptions
-    # ------------------------------------------------------------------
 
     async def create_subscription(
         self,
@@ -99,10 +92,6 @@ class BillingManager:
         except Exception as exc:  # noqa: BLE001
             logger.warning("Stripe subscription cancellation failed; using simulation: %s", exc)
             return self._simulate("cancel_subscription", subscription_id=subscription_id)
-
-    # ------------------------------------------------------------------
-    # Invoices
-    # ------------------------------------------------------------------
 
     async def create_invoice(
         self,
@@ -158,10 +147,6 @@ class BillingManager:
         except Exception as exc:  # noqa: BLE001
             logger.warning("Stripe invoice listing failed; returning simulated invoices: %s", exc)
             return self._invoices
-
-    # ------------------------------------------------------------------
-    # Simulation helpers
-    # ------------------------------------------------------------------
 
     def _simulate(self, action: str, **kwargs: Any) -> dict[str, Any]:
         import uuid

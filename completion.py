@@ -1,9 +1,11 @@
 """AI text completion service with usage tracking."""
+
 import logging
-import os
 import time
 from typing import Any, Dict, Optional
+
 from core.llm_connector import LLMConnector
+from settings import LLM_MODEL, LLM_PROVIDER
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +23,8 @@ class AICompletionService:
     """Handles AI completions with cost tracking and caching."""
 
     def __init__(self):
-        self._provider = os.getenv("LLM_PROVIDER", "openai")
-        self._model = os.getenv("LLM_MODEL", "gpt-4o-mini")
+        self._provider = LLM_PROVIDER
+        self._model = LLM_MODEL
         self._total_tokens = 0
         self._total_cost = 0.0
         self._request_count = 0
@@ -58,8 +60,13 @@ class AICompletionService:
         self._total_cost += cost
         self._request_count += 1
 
-        logger.info("Completion: model=%s tokens=%d cost=$%.5f elapsed=%ss",
-                    model, total_tokens, cost, elapsed)
+        logger.info(
+            "Completion: model=%s tokens=%d cost=$%.5f elapsed=%ss",
+            model,
+            total_tokens,
+            cost,
+            elapsed,
+        )
 
         return {
             "result": result,
@@ -77,8 +84,9 @@ class AICompletionService:
             "total_cost_usd": round(self._total_cost, 4),
         }
 
-# Singleton
+
 _service: Optional[AICompletionService] = None
+
 
 def get_completion_service() -> AICompletionService:
     global _service

@@ -1,6 +1,5 @@
 """ECO-IA FastAPI main application — OVHcloud US b3-8."""
 import logging
-import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncGenerator
@@ -13,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from api.middleware.auth import APIKeyMiddleware
 from api.middleware.rate_limit import RateLimitMiddleware
 from api.routes import admin, services, webhooks
+from settings import API_HOST, API_PORT, API_WORKERS, CORS_ORIGINS, DEBUG
 
 logging.basicConfig(
     level=logging.INFO,
@@ -46,7 +46,7 @@ def create_app() -> FastAPI:
     # ── CORS ─────────────────────────────────────────────────────────────────
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=os.getenv("CORS_ORIGINS", "*").split(","),
+        allow_origins=CORS_ORIGINS,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -99,8 +99,8 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         "api.main:app",
-        host="0.0.0.0",  # noqa: S104
-        port=int(os.getenv("API_PORT", "8000")),
-        reload=os.getenv("DEBUG", "false").lower() == "true",
-        workers=int(os.getenv("API_WORKERS", "1")),
+        host=API_HOST,
+        port=API_PORT,
+        reload=DEBUG,
+        workers=API_WORKERS,
     )

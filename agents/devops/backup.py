@@ -5,6 +5,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from settings import BACKUP_RETENTION_DAYS, HETZNER_STORAGE_BOX_HOST, HETZNER_STORAGE_BOX_USER
+
 
 class BackupManager:
     def __init__(
@@ -15,10 +17,10 @@ class BackupManager:
     ):
         self.eco_ia_dir = eco_ia_dir or os.getenv("ECO_IA_DIR", "/opt/eco-ia")
         self.local_backup_dir = local_backup_dir or os.getenv("LOCAL_BACKUP_DIR")
-        self.retention_days = retention_days or int(os.getenv("BACKUP_RETENTION_DAYS", "30"))
+        self.retention_days = retention_days or BACKUP_RETENTION_DAYS
         self.script_path = Path(__file__).resolve().parents[2] / "backup.sh"
-        self.remote_host = os.getenv("HETZNER_STORAGE_BOX_HOST", "")
-        self.remote_user = os.getenv("HETZNER_STORAGE_BOX_USER", "")
+        self.remote_host = HETZNER_STORAGE_BOX_HOST
+        self.remote_user = HETZNER_STORAGE_BOX_USER
         self._history: list[dict[str, Any]] = []
 
     def run_backup(self, label: str = "manual") -> dict[str, Any]:
