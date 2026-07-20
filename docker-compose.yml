@@ -40,9 +40,8 @@ services:
   eco-ia-worker:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.agent
     container_name: eco-ia-worker
-    command: celery -A core.celery_app worker --loglevel=info --concurrency=4
     restart: always
     <<: *common-env
     depends_on:
