@@ -19,7 +19,11 @@ _AGENTS = [
 
 _SCHEDULER_TASKS = [
     {"task_id": "health_check", "description": "Ping all agents", "interval_seconds": 60},
-    {"task_id": "executive_report", "description": "Generate executive report", "interval_seconds": 3600},
+    {
+        "task_id": "executive_report",
+        "description": "Generate executive report",
+        "interval_seconds": 3600,
+    },
 ]
 
 

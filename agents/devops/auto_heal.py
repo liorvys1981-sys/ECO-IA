@@ -5,7 +5,12 @@ from typing import Any
 
 
 class AutoHealer:
-    def __init__(self, services: list[str] | None = None, check_interval: int = 60, max_restart_attempts: int = 3):
+    def __init__(
+        self,
+        services: list[str] | None = None,
+        check_interval: int = 60,
+        max_restart_attempts: int = 3,
+    ):
         self.services = services or []
         self.check_interval = check_interval
         self.max_restart_attempts = max_restart_attempts
