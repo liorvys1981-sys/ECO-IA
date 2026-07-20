@@ -45,6 +45,16 @@ ECO-IA/
 ├── docker-compose.yml
 ├── Dockerfile
 ├── Dockerfile.agent
+├── docker/
+│   ├── Dockerfile
+│   └── docker-compose.yml
+├── config/
+│   └── nginx.conf
+├── monitoring/
+│   ├── alertmanager/
+│   │   └── config.yml
+│   └── prometheus/
+│       └── prometheus.yml
 ├── requirements.txt
 ├── settings.py
 ├── main.py
@@ -116,13 +126,13 @@ Crea un archivo `.env` en la raíz del proyecto con las variables listadas abajo
 ### 5. Levantar la plataforma con Docker Compose
 
 ```bash
-docker compose up -d --build
+docker compose -f docker/docker-compose.yml up -d --build
 ```
 
 ### 6. Verificar estado
 
 ```bash
-docker compose ps
+docker compose -f docker/docker-compose.yml ps
 curl http://localhost:8000/health
 ```
 
@@ -162,20 +172,20 @@ Variables más importantes para ejecutar el sistema:
 ### Ejecución con Docker Compose
 
 ```bash
-docker compose up -d --build
+docker compose -f docker/docker-compose.yml up -d --build
 ```
 
 ### Detener servicios
 
 ```bash
-docker compose down
+docker compose -f docker/docker-compose.yml down
 ```
 
 ### Ver logs
 
 ```bash
-docker compose logs -f eco-ia-api
-docker compose logs -f eco-ia-worker
+docker compose -f docker/docker-compose.yml logs -f eco-ia-api
+docker compose -f docker/docker-compose.yml logs -f eco-ia-worker
 ```
 
 ### Ejecutar API localmente
