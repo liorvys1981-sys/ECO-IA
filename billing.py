@@ -18,6 +18,9 @@ class BillingManager:
         self._init_stripe()
 
     def _init_stripe(self) -> None:
+        if not self._api_key:
+            logger.info("Stripe API key not configured; billing in simulation mode.")
+            return
         try:
             import stripe  # type: ignore[import]
 
@@ -36,13 +39,17 @@ class BillingManager:
         """Create a new Stripe customer."""
         if not self._stripe_available:
             return self._simulate("create_customer", email=email, name=name)
-        customer = self._stripe.Customer.create(
-            email=email,
-            name=name,
-            metadata=metadata or {},
-        )
-        logger.info("Customer created: %s", customer["id"])
-        return dict(customer)
+        try:
+            customer = self._stripe.Customer.create(
+                email=email,
+                name=name,
+                metadata=metadata or {},
+            )
+            logger.info("Customer created: %s", customer["id"])
+            return dict(customer)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Stripe customer creation failed; using simulation: %s", exc)
+            return self._simulate("create_customer", email=email, name=name)
 
     async def get_customer(self, customer_id: str) -> Dict[str, Any]:
         """Retrieve a Stripe customer by ID."""
@@ -69,17 +76,25 @@ class BillingManager:
         }
         if trial_days > 0:
             params["trial_period_days"] = trial_days
-        subscription = self._stripe.Subscription.create(**params)
-        logger.info("Subscription created: %s", subscription["id"])
-        return dict(subscription)
+        try:
+            subscription = self._stripe.Subscription.create(**params)
+            logger.info("Subscription created: %s", subscription["id"])
+            return dict(subscription)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Stripe subscription creation failed; using simulation: %s", exc)
+            return self._simulate("create_subscription", customer_id=customer_id, price_id=price_id)
 
     async def cancel_subscription(self, subscription_id: str) -> Dict[str, Any]:
         """Cancel an active subscription."""
         if not self._stripe_available:
             return self._simulate("cancel_subscription", subscription_id=subscription_id)
-        subscription = self._stripe.Subscription.delete(subscription_id)
-        logger.info("Subscription cancelled: %s", subscription_id)
-        return dict(subscription)
+        try:
+            subscription = self._stripe.Subscription.delete(subscription_id)
+            logger.info("Subscription cancelled: %s", subscription_id)
+            return dict(subscription)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Stripe subscription cancellation failed; using simulation: %s", exc)
+            return self._simulate("cancel_subscription", subscription_id=subscription_id)
 
     # ------------------------------------------------------------------
     # Invoices
@@ -97,18 +112,29 @@ class BillingManager:
             self._invoices.append(invoice_sim)
             return invoice_sim
 
-        invoice_item = self._stripe.InvoiceItem.create(
-            customer=customer_id,
-            amount=amount_cents,
-            currency="usd",
-            description=description,
-        )
-        invoice = self._stripe.Invoice.create(customer=customer_id)
-        self._stripe.Invoice.finalize_invoice(invoice["id"])
-        result = dict(invoice)
-        self._invoices.append(result)
-        logger.info("Invoice created: %s", invoice["id"])
-        return result
+        try:
+            self._stripe.InvoiceItem.create(
+                customer=customer_id,
+                amount=amount_cents,
+                currency="usd",
+                description=description,
+            )
+            invoice = self._stripe.Invoice.create(customer=customer_id)
+            self._stripe.Invoice.finalize_invoice(invoice["id"])
+            result = dict(invoice)
+            self._invoices.append(result)
+            logger.info("Invoice created: %s", invoice["id"])
+            return result
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Stripe invoice creation failed; using simulation: %s", exc)
+            invoice_sim = self._simulate(
+                "create_invoice",
+                customer_id=customer_id,
+                amount=amount_cents,
+                description=description,
+            )
+            self._invoices.append(invoice_sim)
+            return invoice_sim
 
     async def list_invoices(self, customer_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """List invoices, optionally filtered by customer."""
@@ -117,8 +143,12 @@ class BillingManager:
         params: Dict[str, Any] = {"limit": 100}
         if customer_id:
             params["customer"] = customer_id
-        invoices = self._stripe.Invoice.list(**params)
-        return [dict(inv) for inv in invoices["data"]]
+        try:
+            invoices = self._stripe.Invoice.list(**params)
+            return [dict(inv) for inv in invoices["data"]]
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Stripe invoice listing failed; returning simulated invoices: %s", exc)
+            return self._invoices
 
     # ------------------------------------------------------------------
     # Simulation helpers

@@ -15,7 +15,7 @@ class LLMConnector:
             self.model = model or "llama3"; self.api_key = "ollama"
             self.base_url = base_url or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         else:
-            raise ValueError(f"Unsupported provider: {provider!r}")
+            raise ValueError(f"Unsupported LLM provider: {provider!r}")
     async def chat(self, messages, system_prompt=None):
         if system_prompt: messages = [{"role": "system", "content": system_prompt}] + list(messages)
         return await self._openai_chat(messages) if self.provider == "openai" else await self._ollama_chat(messages)
