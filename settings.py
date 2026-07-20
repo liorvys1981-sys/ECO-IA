@@ -3,7 +3,6 @@
 import os
 from pathlib import Path
 
-
 _SETTINGS_DIR = Path(__file__).resolve().parent
 BASE_DIR = _SETTINGS_DIR if (_SETTINGS_DIR / "docker").exists() else _SETTINGS_DIR.parent
 

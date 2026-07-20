@@ -22,6 +22,11 @@ receivers:
     email_configs:
       - to: "${ALERT_EMAILS}"
         send_resolved: true
+        html: |
+          <h3>ECO-IA Alert: {{ .GroupLabels.alertname }}</h3>
+          {{ range .Alerts }}
+          <p><strong>{{ .Annotations.summary }}</strong><br>{{ .Annotations.description }}</p>
+          {{ end }}
   - name: critical-alerts
     email_configs:
       - to: "${ALERT_EMAILS}"

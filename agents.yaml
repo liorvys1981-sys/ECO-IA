@@ -25,12 +25,10 @@ devops:
     services:
       - eco-ia-api
       - eco-ia-worker
-      - eco-ia-beat
-      - eco-ia-postgres
-      - eco-ia-redis
-      - eco-ia-nginx
-      - eco-ia-prometheus
-      - eco-ia-grafana
+      - postgres
+      - redis
+      - prometheus
+      - grafana
   backup:
     interval: 3600
     retention_days: 30

@@ -151,7 +151,7 @@ Variables más importantes para ejecutar el sistema:
 | `ECO_IA_API_KEY` | API key pública de consumo | `change-me` |
 | `ECO_IA_ADMIN_KEY` | API key administrativa | `change-me-admin` |
 | `CORS_ORIGINS` | Orígenes permitidos | `*` |
-| `DATABASE_URL` | Conexión PostgreSQL | `******postgres:5432/eco_ia` |
+| `DATABASE_URL` | Conexión PostgreSQL | `******localhost:5432/eco_ia` |
 | `REDIS_URL` | Conexión Redis | `redis://redis:6379/0` |
 | `LLM_PROVIDER` | Proveedor LLM | `openai` |
 | `LLM_MODEL` | Modelo LLM | `gpt-4o-mini` |
@@ -165,8 +165,15 @@ Variables más importantes para ejecutar el sistema:
 | `SMTP_USER` | Usuario SMTP | `user@example.com` |
 | `SMTP_PASSWORD` | Password SMTP | `secret` |
 | `ALERT_EMAILS` | Correos de alertas | `ops@example.com,admin@example.com` |
+| `HETZNER_STORAGE_BOX_HOST` | Host de storage box/backups | `u12345.your-storagebox.de` |
+| `HETZNER_STORAGE_BOX_USER` | Usuario de storage box/backups | `u12345` |
+| `HETZNER_API_TOKEN` | Token API de Hetzner | `token` |
 | `PROMETHEUS_PORT` | Puerto Prometheus | `9090` |
 | `GRAFANA_PORT` | Puerto Grafana | `3000` |
+| `COMPOSE_FILE` | Ruta de Docker Compose | `docker/docker-compose.yml` |
+| `BACKUP_RETENTION_DAYS` | Días de retención de backups | `30` |
+| `MAX_BRUTE_FORCE_ATTEMPTS` | Umbral de fuerza bruta | `10` |
+| `AUTO_BLOCK_INTRUDERS` | Bloqueo automático de intrusos | `true` |
 
 ## Cómo ejecutar el sistema
 

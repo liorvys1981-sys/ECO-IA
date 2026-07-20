@@ -30,7 +30,7 @@ def test_settings_defaults(monkeypatch):
 
     assert settings.DEBUG is False
     assert settings.API_PORT == 8000
-    assert settings.DATABASE_URL.startswith("postgresql://")
+    assert "localhost:5432" in settings.DATABASE_URL
     assert settings.DATABASE_URL.endswith("/eco_ia")
     assert settings.ALERT_EMAILS == []
     assert settings.COMPOSE_FILE.endswith("docker/docker-compose.yml")

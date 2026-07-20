@@ -1,13 +1,12 @@
 """Database connection and session management."""
 
-from typing import Generator
+from collections.abc import Generator
 
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 from settings import DATABASE_URL, DEBUG
-
 
 engine = create_engine(
     DATABASE_URL,
