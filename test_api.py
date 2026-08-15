@@ -111,6 +111,14 @@ class TestServiceEndpoints:
         data = response.json()
         assert data["status"] == "operational"
 
+    def test_hosting_ip_pricing(self, client):
+        response = client.get("/api/v1/services/hosting/ip-pricing", headers=self.API_HEADERS)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["provider"] == "OVHcloud US"
+        assert data["currency"] == "USD"
+        assert data["categories"]["cloud"][0]["monthly_price_usd"] == 3.50
+
     def test_data_process(self, client):
         response = client.post(
             "/api/v1/services/data/process",

@@ -306,6 +306,12 @@ class TestPricingEngine:
         plan_keys = {p["plan_key"] for p in plans}
         assert {"basic", "pro", "enterprise"}.issubset(plan_keys)
 
+    def test_get_ovhcloud_us_ip_pricing(self):
+        pricing = self.engine.get_ovhcloud_us_ip_pricing()
+        assert pricing["provider"] == "OVHcloud US"
+        assert pricing["currency"] == "USD"
+        assert pricing["categories"]["dedicated_servers"][0]["monthly_price_usd"] == 1.90
+
     def test_recommend_plan(self):
         plan = self.engine.recommend_plan(monthly_api_calls=5_000, storage_gb=5)
         assert plan == "basic"

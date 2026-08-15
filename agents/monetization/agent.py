@@ -14,6 +14,7 @@ class MonetizationAgent(AgentBase):
         "billing_task",
         "create_client",
         "list_clients",
+        "list_ip_pricing",
         "upgrade_plan",
         "get_price",
         "list_plans",
@@ -77,6 +78,9 @@ class MonetizationAgent(AgentBase):
 
         if task_type == "list_plans":
             return {"plans": self.pricing_engine.list_plans()}
+
+        if task_type == "list_ip_pricing":
+            return self.pricing_engine.get_ovhcloud_us_ip_pricing()
 
         if task_type == "create_invoice":
             invoice = await self.billing_manager.create_invoice(

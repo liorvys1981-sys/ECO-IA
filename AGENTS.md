@@ -57,6 +57,7 @@ Gestiona clientes, facturación Stripe y pricing dinámico.
 engine = PricingEngine()
 price = engine.get_price('pro', usage_pct=80)  # surge pricing
 plans = engine.list_plans()  # basic/pro/enterprise
+ip_catalog = engine.get_ovhcloud_us_ip_pricing()  # OVHcloud US IP prices in USD
 ```
 
 | Plan | Precio base | API calls/mes | Storage |

@@ -6,10 +6,12 @@ from fastapi import APIRouter, Request
 from pydantic import BaseModel, Field
 
 from manager import HostingManager
+from pricing import PricingEngine
 from processor import DataProcessor
 
 router = APIRouter()
 hosting_manager = HostingManager()
+pricing_engine = PricingEngine()
 data_processor = DataProcessor()
 
 
@@ -27,6 +29,16 @@ async def get_hosting_plans(request: Request) -> dict[str, Any]:
         if routed.get("status") == "routed":
             return routed["result"]
     return {"plans": hosting_manager.get_plans()}
+
+
+@router.get("/hosting/ip-pricing")
+async def get_hosting_ip_pricing(request: Request) -> dict[str, Any]:
+    orchestrator = getattr(request.app.state.agent_manager, "agents", {}).get("orchestrator")
+    if orchestrator:
+        routed = await orchestrator.execute({"type": "list_ip_pricing"})
+        if routed.get("status") == "routed":
+            return routed["result"]
+    return pricing_engine.get_ovhcloud_us_ip_pricing()
 
 
 @router.get("/hosting/status")
