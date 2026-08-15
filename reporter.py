@@ -2,7 +2,7 @@
 
 import logging
 import smtplib
-from datetime import datetime
+from datetime import UTC, datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Any
@@ -38,7 +38,7 @@ class Reporter:
         """Generate a structured daily report from *data*."""
         report = {
             "type": "daily",
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "summary": self._build_summary(data),
             "data": data,
         }
@@ -50,7 +50,7 @@ class Reporter:
         """Generate an alert report for a critical event."""
         report = {
             "type": "alert",
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "alert": alert,
         }
         self._reports.append(report)
@@ -96,7 +96,7 @@ class Reporter:
 
     def send_daily_report_email(self, data: dict[str, Any]) -> bool:
         report = self.generate_daily_report(data)
-        subject = f"ECO-IA Daily Report – {datetime.utcnow().strftime('%Y-%m-%d')}"
+        subject = f"ECO-IA Daily Report – {datetime.now(UTC).strftime('%Y-%m-%d')}"
         return self.send_email(subject, report["summary"])
 
     def get_reports(self, report_type: str | None = None, limit: int = 20) -> list[dict[str, Any]]:
