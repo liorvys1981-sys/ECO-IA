@@ -2,7 +2,7 @@
 import os
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent
 
 # General
 DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
@@ -21,7 +21,10 @@ ECO_IA_ADMIN_KEY: str = os.getenv("ECO_IA_ADMIN_KEY", "change-me-in-production-a
 CORS_ORIGINS: list = os.getenv("CORS_ORIGINS", "*").split(",")
 
 # Database
-DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://eco_ia:eco_ia_password@localhost:5432/eco_ia")
+DATABASE_URL: str = os.getenv(
+    "DATABASE_URL",
+    "******localhost:5432/eco_ia",
+)
 REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
 # LLM
@@ -55,7 +58,7 @@ PROMETHEUS_PORT: int = int(os.getenv("PROMETHEUS_PORT", "9090"))
 GRAFANA_PORT: int = int(os.getenv("GRAFANA_PORT", "3000"))
 
 # DevOps
-COMPOSE_FILE: str = os.getenv("COMPOSE_FILE", str(BASE_DIR / "docker" / "docker-compose.yml"))
+COMPOSE_FILE: str = os.getenv("COMPOSE_FILE", str(BASE_DIR / "docker-compose.yml"))
 BACKUP_RETENTION_DAYS: int = int(os.getenv("BACKUP_RETENTION_DAYS", "30"))
 
 # Security
