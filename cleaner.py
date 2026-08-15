@@ -2,6 +2,7 @@
 
 import logging
 import shutil
+import subprocess
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -25,6 +26,22 @@ class Cleaner:
         self.max_log_size_mb = max_log_size_mb
         self._cleanup_log: list[dict[str, Any]] = []
 
+    def _get_path_size(self, path: Path) -> int:
+        if path.is_file() or path.is_symlink():
+            try:
+                return path.lstat().st_size if path.is_symlink() else path.stat().st_size
+            except OSError:
+                return 0
+
+        total = 0
+        for file_path in path.rglob("*"):
+            try:
+                if file_path.is_file():
+                    total += file_path.stat().st_size
+            except OSError:
+                continue
+        return total
+
     # ------------------------------------------------------------------
     # Clean operations
     # ------------------------------------------------------------------
@@ -32,6 +49,7 @@ class Cleaner:
     def clean_old_logs(self) -> dict[str, Any]:
         """Remove log files older than *max_log_age_days*."""
         cutoff = datetime.utcnow() - timedelta(days=self.max_log_age_days)
+        max_log_size_bytes = int(self.max_log_size_mb * 1024**2)
         removed = []
         freed_bytes = 0
 
@@ -40,9 +58,10 @@ class Cleaner:
                 continue
             for file_path in Path(log_dir).rglob("*.log"):
                 try:
-                    mtime = datetime.utcfromtimestamp(file_path.stat().st_mtime)
-                    if mtime < cutoff:
-                        size = file_path.stat().st_size
+                    stat = file_path.stat()
+                    mtime = datetime.utcfromtimestamp(stat.st_mtime)
+                    if mtime < cutoff or stat.st_size > max_log_size_bytes:
+                        size = stat.st_size
                         file_path.unlink()
                         freed_bytes += size
                         removed.append(str(file_path))
@@ -60,7 +79,7 @@ class Cleaner:
         return result
 
     def clean_temp_files(self) -> dict[str, Any]:
-        """Remove temporary directories."""
+        """Remove temporary files and directories."""
         removed = []
         freed_bytes = 0
 
@@ -69,8 +88,11 @@ class Cleaner:
             if not tmp_path.exists():
                 continue
             try:
-                size = sum(f.stat().st_size for f in tmp_path.rglob("*") if f.is_file())
-                shutil.rmtree(tmp_path, ignore_errors=True)
+                size = self._get_path_size(tmp_path)
+                if tmp_path.is_symlink() or tmp_path.is_file():
+                    tmp_path.unlink()
+                else:
+                    shutil.rmtree(tmp_path, ignore_errors=True)
                 freed_bytes += size
                 removed.append(str(tmp_path))
             except OSError as exc:
@@ -88,8 +110,6 @@ class Cleaner:
 
     def clean_docker_artefacts(self) -> dict[str, Any]:
         """Remove unused Docker images, containers, and volumes."""
-        import subprocess
-
         commands = [
             ["docker", "container", "prune", "-f"],
             ["docker", "image", "prune", "-f"],
@@ -97,12 +117,34 @@ class Cleaner:
             ["docker", "network", "prune", "-f"],
         ]
         results = []
+        docker_executable = shutil.which("docker")
         for cmd in commands:
-            proc = subprocess.run(cmd, capture_output=True, text=True, check=False)  # noqa: S603
+            if docker_executable is None:
+                results.append(
+                    {
+                        "cmd": " ".join(cmd),
+                        "success": False,
+                        "output": "docker executable not found",
+                    }
+                )
+                continue
+
+            try:
+                proc = subprocess.run(cmd, capture_output=True, text=True, check=False)  # noqa: S603
+            except OSError as exc:
+                results.append(
+                    {
+                        "cmd": " ".join(cmd),
+                        "success": False,
+                        "output": str(exc),
+                    }
+                )
+                continue
+
             results.append({
                 "cmd": " ".join(cmd),
                 "success": proc.returncode == 0,
-                "output": proc.stdout[-200:] if proc.stdout else "",
+                "output": (proc.stdout or proc.stderr or "")[-200:],
             })
 
         result: dict[str, Any] = {

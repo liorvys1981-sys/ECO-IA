@@ -20,7 +20,7 @@ from agents.monetization import MonetizationAgent
 from agents.monetization.billing import BillingManager
 from agents.monetization.clients import ClientManager
 from agents.monetization.pricing import PricingEngine
-from agents.resources import ResourcesAgent
+from agents.resources import Cleaner, ResourcesAgent
 from agents.resources.optimizer import ResourceOptimizer
 from agents.security import SecurityAgent
 from agents.security.firewall import FirewallManager
@@ -560,6 +560,41 @@ class TestResourcesAgent:
         assert "metrics" in result
         assert "alerts" in result
         assert "cleanup" in result
+
+
+class TestCleaner:
+    def test_clean_old_logs_removes_large_logs(self, tmp_path):
+        log_dir = tmp_path / "logs"
+        log_dir.mkdir()
+        large_log = log_dir / "large.log"
+        large_log.write_bytes(b"x" * 2048)
+
+        cleaner = Cleaner(log_dirs=[str(log_dir)], max_log_size_mb=0.001)
+
+        result = cleaner.clean_old_logs()
+
+        assert result["removed_count"] == 1
+        assert not large_log.exists()
+
+    def test_clean_temp_files_removes_file_paths(self, tmp_path):
+        temp_file = tmp_path / "temp.txt"
+        temp_file.write_text("temporary data")
+
+        cleaner = Cleaner(temp_dirs=[str(temp_file)])
+
+        result = cleaner.clean_temp_files()
+
+        assert result["cleaned_dirs"] == [str(temp_file)]
+        assert not temp_file.exists()
+
+    def test_clean_docker_artefacts_handles_missing_docker(self):
+        cleaner = Cleaner()
+
+        with patch("cleaner.shutil.which", return_value=None):
+            result = cleaner.clean_docker_artefacts()
+
+        assert all(item["success"] is False for item in result["results"])
+        assert all(item["output"] == "docker executable not found" for item in result["results"])
 
 
 class TestSecurityAgent:
