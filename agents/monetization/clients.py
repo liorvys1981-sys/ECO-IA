@@ -2,7 +2,7 @@
 
 import logging
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ class Client:
         self.email = email
         self.plan = plan
         self.stripe_customer_id = stripe_customer_id
-        self.created_at = datetime.utcnow()
+        self.created_at = datetime.now(UTC)
         self.last_activity: datetime | None = None
         self.is_active = True
         self.monthly_spend: float = 0.0
@@ -98,7 +98,7 @@ class ClientManager:
     def record_activity(self, client_id: str) -> None:
         client = self._clients.get(client_id)
         if client:
-            client.last_activity = datetime.utcnow()
+            client.last_activity = datetime.now(UTC)
 
     def detect_upsell_opportunities(self) -> list[dict[str, Any]]:
         """Identify clients that could benefit from a plan upgrade."""

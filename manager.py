@@ -1,7 +1,7 @@
 """Hosting service manager — manages hosted environments."""
 import logging
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -66,7 +66,7 @@ class HostingManager:
             "plan": plan,
             "status": "running",
             "server_ip": self._server_ip,
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             "resources": plan_config,
         }
         self._instances[instance_id] = instance
@@ -93,5 +93,5 @@ class HostingManager:
             "server": self._server_ip,
             "uptime_pct": 99.9,
             "active_instances": active_instances,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }

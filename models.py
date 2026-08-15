@@ -1,6 +1,6 @@
 """ECO-IA SQLAlchemy models."""
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 
 from sqlalchemy import Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String, Text
@@ -28,11 +28,11 @@ class Client(Base):
     stripe_subscription_id = Column(String(255), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
     monthly_spend = Column(Float, default=0.0)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
     updated_at = Column(
         DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow)
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC))
 
     invoices = relationship(
         "Invoice",
@@ -62,7 +62,7 @@ class Invoice(Base):
     currency = Column(String(3), default="usd")
     status = Column(String(50), default="pending")
     description = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
     paid_at = Column(DateTime, nullable=True)
 
     client = relationship("Client", back_populates="invoices")
@@ -82,7 +82,7 @@ class APIUsage(Base):
     tokens_used = Column(Integer, default=0)
     cost_usd = Column(Float, default=0.0)
     model = Column(String(100), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), index=True)
 
     client = relationship("Client", back_populates="api_usages")
 
@@ -97,7 +97,7 @@ class SystemMetric(Base):
     disk_percent = Column(Float, nullable=False)
     active_clients = Column(Integer, default=0)
     monthly_revenue = Column(Float, default=0.0)
-    recorded_at = Column(DateTime, default=datetime.utcnow, index=True)
+    recorded_at = Column(DateTime, default=lambda: datetime.now(UTC), index=True)
 
 
 class SecurityAlert(Base):
@@ -110,7 +110,7 @@ class SecurityAlert(Base):
     severity = Column(String(20), default="medium")
     description = Column(Text, nullable=True)
     resolved = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), index=True)
     resolved_at = Column(DateTime, nullable=True)
 
 
@@ -123,4 +123,4 @@ class AgentEvent(Base):
     event_type = Column(String(100), nullable=False)
     payload = Column(Text, nullable=True)
     success = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), index=True)

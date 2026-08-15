@@ -1,7 +1,7 @@
 """Auto-scaler - adjusts Docker service replicas based on load."""
 import logging
 import subprocess
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class AutoScaler:
             "action": "no_change",
             "current_replicas": current,
             "cpu_percent": cpu_percent,
-            "timestamp": datetime.utcnow().isoformat()}
+            "timestamp": datetime.now(UTC).isoformat()}
 
     def scale(self, service: str, replicas: int,
               reason: str = "") -> dict[str, Any]:
@@ -59,7 +59,7 @@ class AutoScaler:
             "new_replicas": replicas if success else old,
             "success": success,
             "reason": reason,
-            "timestamp": datetime.utcnow().isoformat()}
+            "timestamp": datetime.now(UTC).isoformat()}
         self._scale_events.append(event)
         return event
 

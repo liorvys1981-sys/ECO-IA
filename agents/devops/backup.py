@@ -3,7 +3,7 @@
 import logging
 import os
 import subprocess
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -30,7 +30,7 @@ class BackupManager:
 
     def run_backup(self, label: str = "") -> dict[str, Any]:
         """Perform a full rsync backup to Hetzner Storage Box."""
-        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         backup_name = f"backup_{timestamp}" + (f"_{label}" if label else "")
         remote_target = (
             f"{self.storage_box_user}@{self.storage_box_host}:{self.remote_path}/{backup_name}/"
@@ -69,7 +69,7 @@ class BackupManager:
 
         record: dict[str, Any] = {
             "backup_name": backup_name,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "remote_target": remote_target,
             "results": results,
             "status": "success" if all(r["success"] for r in results) else "partial",
@@ -81,7 +81,7 @@ class BackupManager:
     def _simulate_backup(self, backup_name: str) -> dict[str, Any]:
         return {
             "backup_name": backup_name,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "remote_target": "simulated",
             "results": [{"path": path, "success": True, "stderr": ""} for path in self.local_paths],
             "status": "simulated",

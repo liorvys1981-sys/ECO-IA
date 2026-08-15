@@ -4,7 +4,7 @@ import ipaddress
 import logging
 import shutil
 import subprocess
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -59,7 +59,7 @@ class FirewallManager:
         record = {
             "action": action,
             **details,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         self._rule_log.append(record)
         return record

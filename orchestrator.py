@@ -3,7 +3,7 @@
 import json
 import logging
 from collections.abc import Awaitable, Callable
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from agents.analytics import AnalyticsAgent
@@ -124,7 +124,7 @@ class OrchestratorAgent(AgentBase):
         agent_record: dict[str, Any] = {
             "name": agent_name,
             "description": task.get("description", ""),
-            "registered_at": datetime.utcnow().isoformat(),
+            "registered_at": datetime.now(UTC).isoformat(),
             "status": "active",
         }
         if task_types:
@@ -173,7 +173,7 @@ class OrchestratorAgent(AgentBase):
             report = await self.llm.complete(prompt)
             decision = {
                 "type": "executive_report",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "report": report,
             }
             self._decisions_log.append(decision)
@@ -192,7 +192,7 @@ class OrchestratorAgent(AgentBase):
         if msg_type == "health_pong":
             agent_name = content.get("agent_name", message.sender)
             if agent_name in self._agent_registry:
-                self._agent_registry[agent_name]["last_seen"] = datetime.utcnow().isoformat()
+                self._agent_registry[agent_name]["last_seen"] = datetime.now(UTC).isoformat()
                 self._agent_registry[agent_name]["status"] = "active"
 
         elif msg_type == "alert":
@@ -203,7 +203,7 @@ class OrchestratorAgent(AgentBase):
         self._logger.warning("Alert from '%s': %s", message.sender, alert.get("message"))
         decision = {
             "type": "alert_response",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "from_agent": message.sender,
             "alert": alert,
         }
@@ -237,7 +237,7 @@ class OrchestratorAgent(AgentBase):
         )
         decision = {
             "type": "llm_decision",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "question": question,
             "answer": answer,
         }
@@ -276,7 +276,7 @@ def bytes_to_human(num_bytes: int) -> str:
 
 
 def iso_now() -> str:
-    return datetime.utcnow().isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def safe_json(payload: Any) -> str:

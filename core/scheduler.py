@@ -3,7 +3,7 @@
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -72,7 +72,7 @@ class TaskScheduler:
             await asyncio.sleep(scheduled.interval_seconds)
             try:
                 await scheduled.func()
-                scheduled.last_run = datetime.utcnow()
+                scheduled.last_run = datetime.now(UTC)
                 scheduled.run_count += 1
             except asyncio.CancelledError:
                 break

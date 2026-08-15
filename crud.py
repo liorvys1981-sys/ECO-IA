@@ -1,6 +1,6 @@
 """CRUD operations for ECO-IA models."""
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
@@ -53,7 +53,7 @@ def update_client_plan(
     client = get_client(db, client_id)
     if client:
         client.plan = PlanEnum(new_plan)
-        client.updated_at = datetime.utcnow()
+        client.updated_at = datetime.now(UTC)
         db.commit()
         db.refresh(client)
     return client
@@ -63,7 +63,7 @@ def deactivate_client(db: Session, client_id: uuid.UUID) -> bool:
     client = get_client(db, client_id)
     if client:
         client.is_active = False
-        client.updated_at = datetime.utcnow()
+        client.updated_at = datetime.now(UTC)
         db.commit()
         return True
     return False
@@ -97,7 +97,7 @@ def mark_invoice_paid(db: Session, invoice_id: uuid.UUID) -> Invoice | None:
     inv = db.query(Invoice).filter(Invoice.id == invoice_id).first()
     if inv:
         inv.status = "paid"
-        inv.paid_at = datetime.utcnow()
+        inv.paid_at = datetime.now(UTC)
         db.commit()
         db.refresh(inv)
     return inv

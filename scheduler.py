@@ -1,7 +1,7 @@
 """Task scheduler for ECO-IA agents."""
 import asyncio
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ class TaskScheduler:
             await asyncio.sleep(s.interval_seconds)
             try:
                 await s.func()
-                s.last_run = datetime.utcnow()
+                s.last_run = datetime.now(UTC)
                 s.run_count += 1
             except asyncio.CancelledError:
                 break

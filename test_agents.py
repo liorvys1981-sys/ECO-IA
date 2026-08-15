@@ -792,5 +792,5 @@ class TestHelpers:
     def test_safe_json_non_serializable(self):
         import datetime
 
-        result = safe_json({"date": datetime.datetime.utcnow()})
+        result = safe_json({"date": datetime.datetime.now(datetime.UTC)})
         assert isinstance(result, str)

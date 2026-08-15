@@ -3,7 +3,7 @@
 import logging
 import re
 from collections import Counter
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -61,7 +61,7 @@ class IntrusionDetector:
                     "type": "brute_force",
                     "ip": ip,
                     "failed_attempts": count,
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "severity": "high" if count >= self.brute_force_threshold * 2 else "medium",
                 }
                 threats.append(threat)

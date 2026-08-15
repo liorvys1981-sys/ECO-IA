@@ -2,7 +2,7 @@
 
 import logging
 import subprocess
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ class SecurityAuditor:
             "check": "open_ports",
             "output": result.stdout,
             "success": result.returncode == 0,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     def check_failed_logins(self) -> dict[str, Any]:
@@ -47,7 +47,7 @@ class SecurityAuditor:
             "check": "failed_logins",
             "count": len(failed),
             "severity": "high" if len(failed) > 50 else "low",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     def check_sudo_usage(self) -> dict[str, Any]:
@@ -61,7 +61,7 @@ class SecurityAuditor:
         return {
             "check": "sudo_usage",
             "events": len(result.stdout.splitlines()) if result.stdout else 0,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     def check_world_writable_files(self, path: str = "/opt/eco-ia") -> dict[str, Any]:
@@ -78,7 +78,7 @@ class SecurityAuditor:
             "files": files,
             "count": len(files),
             "severity": "high" if files else "low",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     # ------------------------------------------------------------------
@@ -94,7 +94,7 @@ class SecurityAuditor:
         ]
         high_severity = [c for c in checks if c.get("severity") == "high"]
         audit = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "checks": checks,
             "overall_status": "alert" if high_severity else "ok",
             "high_severity_count": len(high_severity),

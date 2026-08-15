@@ -3,7 +3,7 @@
 import asyncio
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from .communication import Message, MessageBus
@@ -82,7 +82,7 @@ class AgentBase(ABC):
     async def _heartbeat_loop(self) -> None:
         interval = int(self.config.get("heartbeat_interval", 30))
         while self.is_running:
-            self.last_heartbeat = datetime.utcnow()
+            self.last_heartbeat = datetime.now(UTC)
             await asyncio.sleep(interval)
 
     def health_status(self) -> dict[str, Any]:

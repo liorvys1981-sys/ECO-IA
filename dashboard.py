@@ -1,7 +1,7 @@
 """Dashboard data aggregator for the analytics agent."""
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ class DashboardData:
     ) -> dict[str, Any]:
         """Capture a dashboard snapshot from agent data."""
         snap = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "resources": resources or {},
             "monetization": monetization or {},
             "security": security or {},

@@ -1,7 +1,7 @@
 """Docker Compose deployment helper."""
 
 import subprocess
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 
@@ -23,7 +23,7 @@ class Deployer:
             "success": result.returncode == 0,
             "stdout": result.stdout.strip(),
             "stderr": result.stderr.strip(),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         self._events.append(event)
         return event
@@ -40,7 +40,7 @@ class Deployer:
             "success": result.returncode == 0,
             "stdout": result.stdout.strip(),
             "stderr": result.stderr.strip(),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         self._events.append(event)
         return event
@@ -56,5 +56,5 @@ class Deployer:
             "status": "operational" if result.returncode == 0 else "degraded",
             "compose_file": self.compose_file,
             "output": result.stdout.strip(),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }

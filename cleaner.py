@@ -3,7 +3,7 @@
 import logging
 import shutil
 import subprocess
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -48,7 +48,7 @@ class Cleaner:
 
     def clean_old_logs(self) -> dict[str, Any]:
         """Remove log files older than *max_log_age_days*."""
-        cutoff = datetime.utcnow() - timedelta(days=self.max_log_age_days)
+        cutoff = datetime.now(UTC) - timedelta(days=self.max_log_age_days)
         max_log_size_bytes = int(self.max_log_size_mb * 1024**2)
         removed = []
         freed_bytes = 0
@@ -59,7 +59,7 @@ class Cleaner:
             for file_path in Path(log_dir).rglob("*.log"):
                 try:
                     stat = file_path.stat()
-                    mtime = datetime.utcfromtimestamp(stat.st_mtime)
+                    mtime = datetime.fromtimestamp(stat.st_mtime, UTC)
                     if mtime < cutoff or stat.st_size > max_log_size_bytes:
                         size = stat.st_size
                         file_path.unlink()
@@ -72,7 +72,7 @@ class Cleaner:
             "action": "clean_old_logs",
             "removed_count": len(removed),
             "freed_mb": round(freed_bytes / 1024**2, 2),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         self._cleanup_log.append(result)
         logger.info("Cleaned %d old log files (%.2f MB freed).", len(removed), result["freed_mb"])
@@ -102,7 +102,7 @@ class Cleaner:
             "action": "clean_temp_files",
             "cleaned_dirs": removed,
             "freed_mb": round(freed_bytes / 1024**2, 2),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         self._cleanup_log.append(result)
         logger.info("Cleaned temp files (%.2f MB freed).", result["freed_mb"])
@@ -150,7 +150,7 @@ class Cleaner:
         result: dict[str, Any] = {
             "action": "clean_docker_artefacts",
             "results": results,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         self._cleanup_log.append(result)
         return result

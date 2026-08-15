@@ -4,7 +4,7 @@ import asyncio
 import logging
 import subprocess
 from collections.abc import Callable, Coroutine
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -58,7 +58,7 @@ class AutoHealer:
                 "status_before": status,
                 "restart_attempt": 0,
                 "success": True,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
 
         attempts = self._restart_counts.get(service, 0)
@@ -82,7 +82,7 @@ class AutoHealer:
                 "status_before": status,
                 "restart_attempt": attempts,
                 "success": False,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
             self._heal_log.append(record)
             return record
@@ -94,7 +94,7 @@ class AutoHealer:
             "status_before": status,
             "restart_attempt": attempts + 1,
             "success": result,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         self._heal_log.append(record)
         return record
