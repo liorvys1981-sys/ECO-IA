@@ -178,6 +178,42 @@ class TestAgentManager:
 
 class TestOrchestratorRouting:
     @pytest.mark.asyncio
+    async def test_register_and_list_agents(self):
+        orchestrator = OrchestratorAgent()
+
+        registered = await orchestrator.execute(
+            {
+                "type": "register_agent",
+                "agent_name": "security",
+                "description": "security agent",
+            }
+        )
+        listed = await orchestrator.execute({"type": "list_agents"})
+
+        assert registered == {"status": "registered", "agent": "security"}
+        assert listed["agents"][0]["name"] == "security"
+        assert listed["agents"][0]["description"] == "security agent"
+        assert listed["agents"][0]["status"] == "active"
+
+    @pytest.mark.asyncio
+    async def test_health_report_includes_registered_agents(self):
+        orchestrator = OrchestratorAgent()
+        await orchestrator.execute(
+            {
+                "type": "register_agent",
+                "agent_name": "analytics",
+                "description": "analytics agent",
+            }
+        )
+
+        report = await orchestrator.execute({"type": "health_report"})
+
+        assert report["orchestrator"]["name"] == "orchestrator"
+        assert "analytics" in report["registered_agents"]
+        assert isinstance(report["scheduler_tasks"], list)
+        assert report["recent_decisions"] == []
+
+    @pytest.mark.asyncio
     async def test_routes_task_to_registered_agent(self):
         orchestrator = OrchestratorAgent()
 

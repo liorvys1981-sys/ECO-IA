@@ -116,17 +116,20 @@ class OrchestratorAgent(AgentBase):
     def _register_agent(self, task: dict[str, Any]) -> dict[str, Any]:
         agent_name = task.get("agent_name", "unknown")
         executor = task.get("executor")
+        task_types = list(task.get("task_types", []))
         if executor:
             self._agent_executors[agent_name] = executor
-        for task_type in task.get("task_types", []):
+        for task_type in task_types:
             self._task_routes[task_type] = agent_name
-        self._agent_registry[agent_name] = {
+        agent_record: dict[str, Any] = {
             "name": agent_name,
             "description": task.get("description", ""),
-            "task_types": task.get("task_types", []),
             "registered_at": datetime.utcnow().isoformat(),
             "status": "active",
         }
+        if task_types:
+            agent_record["task_types"] = task_types
+        self._agent_registry[agent_name] = agent_record
         self._logger.info("Agent '%s' registered.", agent_name)
         return {"status": "registered", "agent": agent_name}
 
