@@ -3,8 +3,7 @@
 import logging
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Optional
-
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +17,7 @@ class Client:
         name: str,
         email: str,
         plan: str = "basic",
-        stripe_customer_id: Optional[str] = None,
+        stripe_customer_id: str | None = None,
     ) -> None:
         self.client_id = client_id
         self.name = name
@@ -26,12 +25,12 @@ class Client:
         self.plan = plan
         self.stripe_customer_id = stripe_customer_id
         self.created_at = datetime.utcnow()
-        self.last_activity: Optional[datetime] = None
+        self.last_activity: datetime | None = None
         self.is_active = True
         self.monthly_spend: float = 0.0
-        self.upsell_opportunities: List[str] = []
+        self.upsell_opportunities: list[str] = []
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "client_id": self.client_id,
             "name": self.name,
@@ -50,7 +49,7 @@ class ClientManager:
     """Manages the lifecycle of ECO-IA clients."""
 
     def __init__(self) -> None:
-        self._clients: Dict[str, Client] = {}
+        self._clients: dict[str, Client] = {}
 
     # ------------------------------------------------------------------
     # CRUD
@@ -61,7 +60,7 @@ class ClientManager:
         name: str,
         email: str,
         plan: str = "basic",
-        stripe_customer_id: Optional[str] = None,
+        stripe_customer_id: str | None = None,
     ) -> Client:
         client_id = str(uuid.uuid4())
         client = Client(
@@ -75,10 +74,10 @@ class ClientManager:
         logger.info("Client created: %s (%s)", name, client_id)
         return client
 
-    def get_client(self, client_id: str) -> Optional[Client]:
+    def get_client(self, client_id: str) -> Client | None:
         return self._clients.get(client_id)
 
-    def list_clients(self, active_only: bool = True) -> List[Client]:
+    def list_clients(self, active_only: bool = True) -> list[Client]:
         if active_only:
             return [c for c in self._clients.values() if c.is_active]
         return list(self._clients.values())
@@ -96,7 +95,11 @@ class ClientManager:
         if client:
             old_plan = client.plan
             client.plan = new_plan
-            logger.info("Client '%s' upgraded from '%s' to '%s'.", client_id, old_plan, new_plan)
+            logger.info(
+                "Client '%s' upgraded from '%s' to '%s'.",
+                client_id,
+                old_plan,
+                new_plan)
             return True
         return False
 
@@ -109,7 +112,7 @@ class ClientManager:
         if client:
             client.last_activity = datetime.utcnow()
 
-    def detect_upsell_opportunities(self) -> List[Dict[str, Any]]:
+    def detect_upsell_opportunities(self) -> list[dict[str, Any]]:
         """Identify clients that could benefit from a plan upgrade."""
         opportunities = []
         for client in self._clients.values():
@@ -137,10 +140,16 @@ class ClientManager:
                 )
         return opportunities
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         active = self.list_clients(active_only=True)
         return {
-            "total_clients": len(self._clients),
+            "total_clients": len(
+                self._clients),
             "active_clients": len(active),
-            "plans": {plan: sum(1 for c in active if c.plan == plan) for plan in {"basic", "pro", "enterprise"}},
+            "plans": {
+                plan: sum(
+                    1 for c in active if c.plan == plan) for plan in {
+                    "basic",
+                    "pro",
+                    "enterprise"}},
         }

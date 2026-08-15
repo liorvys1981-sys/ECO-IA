@@ -2,8 +2,7 @@
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
-
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -12,15 +11,15 @@ class DashboardData:
     """Aggregates metrics from all agents for the Grafana/web dashboard."""
 
     def __init__(self) -> None:
-        self._snapshots: List[Dict[str, Any]] = []
+        self._snapshots: list[dict[str, Any]] = []
 
     def snapshot(
         self,
-        resources: Optional[Dict[str, Any]] = None,
-        monetization: Optional[Dict[str, Any]] = None,
-        security: Optional[Dict[str, Any]] = None,
-        devops: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        resources: dict[str, Any] | None = None,
+        monetization: dict[str, Any] | None = None,
+        security: dict[str, Any] | None = None,
+        devops: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Capture a dashboard snapshot from agent data."""
         snap = {
             "timestamp": datetime.utcnow().isoformat(),
@@ -34,13 +33,13 @@ class DashboardData:
             self._snapshots = self._snapshots[-1440:]
         return snap
 
-    def get_latest(self) -> Optional[Dict[str, Any]]:
+    def get_latest(self) -> dict[str, Any] | None:
         return self._snapshots[-1] if self._snapshots else None
 
-    def get_history(self, limit: int = 60) -> List[Dict[str, Any]]:
+    def get_history(self, limit: int = 60) -> list[dict[str, Any]]:
         return self._snapshots[-limit:]
 
-    def get_kpis(self) -> Dict[str, Any]:
+    def get_kpis(self) -> dict[str, Any]:
         """Compute high-level KPIs from the latest snapshot."""
         latest = self.get_latest()
         if not latest:
@@ -61,7 +60,7 @@ class DashboardData:
             "system_health": self._compute_health(res, sec),
         }
 
-    def _compute_health(self, resources: Dict[str, Any], security: Dict[str, Any]) -> str:
+    def _compute_health(self, resources: dict[str, Any], security: dict[str, Any]) -> str:
         if security.get("high_severity", 0) > 0:
             return "critical"
         cpu = resources.get("cpu_percent", 0)

@@ -2,7 +2,7 @@
 import logging
 import os
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -44,17 +44,17 @@ class HostingManager:
     """Manages hosted service instances for clients."""
 
     def __init__(self):
-        self._instances: Dict[str, Dict[str, Any]] = {}
+        self._instances: dict[str, dict[str, Any]] = {}
         self._server_ip = os.getenv("SERVER_IP", "135.148.232.10")
 
-    def get_plans(self) -> List[Dict[str, Any]]:
+    def get_plans(self) -> list[dict[str, Any]]:
         """Return all available hosting plans."""
         return [{"plan_key": k, **v} for k, v in HOSTING_PLANS.items()]
 
-    def get_plan(self, plan_key: str) -> Optional[Dict[str, Any]]:
+    def get_plan(self, plan_key: str) -> dict[str, Any] | None:
         return HOSTING_PLANS.get(plan_key)
 
-    def provision_instance(self, client_id: str, plan: str) -> Dict[str, Any]:
+    def provision_instance(self, client_id: str, plan: str) -> dict[str, Any]:
         """Provision a hosting instance for a client."""
         plan_config = HOSTING_PLANS.get(plan)
         if not plan_config:
@@ -74,20 +74,24 @@ class HostingManager:
                     instance_id, client_id, plan)
         return instance
 
-    def get_instance(self, instance_id: str) -> Optional[Dict[str, Any]]:
+    def get_instance(self, instance_id: str) -> dict[str, Any] | None:
         return self._instances.get(instance_id)
 
-    def list_instances(self, client_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    def list_instances(self, client_id: str |
+                       None = None) -> list[dict[str, Any]]:
         instances = list(self._instances.values())
         if client_id:
             instances = [i for i in instances if i["client_id"] == client_id]
         return instances
 
-    def get_service_status(self) -> Dict[str, Any]:
+    def get_service_status(self) -> dict[str, Any]:
+        active_instances = sum(
+            1 for instance in self._instances.values() if instance["status"] == "running"
+        )
         return {
             "status": "operational",
             "server": self._server_ip,
             "uptime_pct": 99.9,
-            "active_instances": len([i for i in self._instances.values() if i["status"] == "running"]),
+            "active_instances": active_instances,
             "timestamp": datetime.utcnow().isoformat(),
         }

@@ -3,8 +3,7 @@
 import logging
 import subprocess
 from datetime import datetime
-from typing import Any, Dict, List
-
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -13,13 +12,13 @@ class SecurityAuditor:
     """Performs periodic security audits on the server."""
 
     def __init__(self) -> None:
-        self._audit_history: List[Dict[str, Any]] = []
+        self._audit_history: list[dict[str, Any]] = []
 
     # ------------------------------------------------------------------
     # Audit checks
     # ------------------------------------------------------------------
 
-    def check_open_ports(self) -> Dict[str, Any]:
+    def check_open_ports(self) -> dict[str, Any]:
         """List open ports using ss."""
         result = subprocess.run(  # noqa: S603
             ["ss", "-tlnp"],
@@ -34,7 +33,7 @@ class SecurityAuditor:
             "timestamp": datetime.utcnow().isoformat(),
         }
 
-    def check_failed_logins(self) -> Dict[str, Any]:
+    def check_failed_logins(self) -> dict[str, Any]:
         """Count failed login attempts in the last 24 hours using journalctl."""
         result = subprocess.run(  # noqa: S603
             ["journalctl", "-u", "ssh", "--since", "24 hours ago", "--no-pager", "-q"],
@@ -51,7 +50,7 @@ class SecurityAuditor:
             "timestamp": datetime.utcnow().isoformat(),
         }
 
-    def check_sudo_usage(self) -> Dict[str, Any]:
+    def check_sudo_usage(self) -> dict[str, Any]:
         """Audit recent sudo usage."""
         result = subprocess.run(  # noqa: S603
             ["journalctl", "-u", "sudo", "--since", "24 hours ago", "--no-pager", "-q"],
@@ -65,7 +64,7 @@ class SecurityAuditor:
             "timestamp": datetime.utcnow().isoformat(),
         }
 
-    def check_world_writable_files(self, path: str = "/opt/eco-ia") -> Dict[str, Any]:
+    def check_world_writable_files(self, path: str = "/opt/eco-ia") -> dict[str, Any]:
         """Find world-writable files in the ECO-IA directory."""
         result = subprocess.run(  # noqa: S603
             ["find", path, "-perm", "-o+w", "-not", "-type", "l"],
@@ -86,7 +85,7 @@ class SecurityAuditor:
     # Full audit
     # ------------------------------------------------------------------
 
-    def run_full_audit(self) -> Dict[str, Any]:
+    def run_full_audit(self) -> dict[str, Any]:
         """Run all security checks and aggregate results."""
         checks = [
             self.check_open_ports(),
@@ -104,5 +103,5 @@ class SecurityAuditor:
         logger.info("Security audit completed. Status: %s", audit["overall_status"])
         return audit
 
-    def get_audit_history(self, limit: int = 10) -> List[Dict[str, Any]]:
+    def get_audit_history(self, limit: int = 10) -> list[dict[str, Any]]:
         return self._audit_history[-limit:]

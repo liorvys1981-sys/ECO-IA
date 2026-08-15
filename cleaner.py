@@ -1,13 +1,10 @@
 """Cleaner - automatic removal of logs and temporary files."""
 
-import glob
 import logging
-import os
 import shutil
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +14,8 @@ class Cleaner:
 
     def __init__(
         self,
-        log_dirs: Optional[List[str]] = None,
-        temp_dirs: Optional[List[str]] = None,
+        log_dirs: list[str] | None = None,
+        temp_dirs: list[str] | None = None,
         max_log_age_days: int = 7,
         max_log_size_mb: float = 100.0,
     ) -> None:
@@ -26,13 +23,13 @@ class Cleaner:
         self.temp_dirs = temp_dirs or []  # caller must supply safe temp dirs explicitly
         self.max_log_age_days = max_log_age_days
         self.max_log_size_mb = max_log_size_mb
-        self._cleanup_log: List[Dict[str, Any]] = []
+        self._cleanup_log: list[dict[str, Any]] = []
 
     # ------------------------------------------------------------------
     # Clean operations
     # ------------------------------------------------------------------
 
-    def clean_old_logs(self) -> Dict[str, Any]:
+    def clean_old_logs(self) -> dict[str, Any]:
         """Remove log files older than *max_log_age_days*."""
         cutoff = datetime.utcnow() - timedelta(days=self.max_log_age_days)
         removed = []
@@ -52,7 +49,7 @@ class Cleaner:
                 except OSError as exc:
                     logger.warning("Could not remove '%s': %s", file_path, exc)
 
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "action": "clean_old_logs",
             "removed_count": len(removed),
             "freed_mb": round(freed_bytes / 1024**2, 2),
@@ -62,7 +59,7 @@ class Cleaner:
         logger.info("Cleaned %d old log files (%.2f MB freed).", len(removed), result["freed_mb"])
         return result
 
-    def clean_temp_files(self) -> Dict[str, Any]:
+    def clean_temp_files(self) -> dict[str, Any]:
         """Remove temporary directories."""
         removed = []
         freed_bytes = 0
@@ -79,7 +76,7 @@ class Cleaner:
             except OSError as exc:
                 logger.warning("Could not clean '%s': %s", tmp_path, exc)
 
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "action": "clean_temp_files",
             "cleaned_dirs": removed,
             "freed_mb": round(freed_bytes / 1024**2, 2),
@@ -89,7 +86,7 @@ class Cleaner:
         logger.info("Cleaned temp files (%.2f MB freed).", result["freed_mb"])
         return result
 
-    def clean_docker_artefacts(self) -> Dict[str, Any]:
+    def clean_docker_artefacts(self) -> dict[str, Any]:
         """Remove unused Docker images, containers, and volumes."""
         import subprocess
 
@@ -108,7 +105,7 @@ class Cleaner:
                 "output": proc.stdout[-200:] if proc.stdout else "",
             })
 
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "action": "clean_docker_artefacts",
             "results": results,
             "timestamp": datetime.utcnow().isoformat(),
@@ -116,7 +113,7 @@ class Cleaner:
         self._cleanup_log.append(result)
         return result
 
-    def run_all(self) -> List[Dict[str, Any]]:
+    def run_all(self) -> list[dict[str, Any]]:
         """Run all cleanup tasks."""
         return [
             self.clean_old_logs(),
@@ -124,5 +121,5 @@ class Cleaner:
             self.clean_docker_artefacts(),
         ]
 
-    def get_cleanup_history(self, limit: int = 20) -> List[Dict[str, Any]]:
+    def get_cleanup_history(self, limit: int = 20) -> list[dict[str, Any]]:
         return self._cleanup_log[-limit:]

@@ -1,13 +1,12 @@
 """Dynamic pricing engine for ECO-IA services."""
 
 import logging
-from typing import Any, Dict, List, Optional
-
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
-PLANS: Dict[str, Dict[str, Any]] = {
+PLANS: dict[str, dict[str, Any]] = {
     "basic": {
         "name": "Basic",
         "base_price_usd": 9.99,
@@ -60,7 +59,12 @@ class PricingEngine:
         base = plan_config["base_price_usd"]
         demand_factor = self._compute_demand_factor(usage_pct)
         price = round(base * self._demand_multiplier * demand_factor, 2)
-        logger.debug("Price for '%s': base=%.2f demand_factor=%.2f → %.2f", plan, base, demand_factor, price)
+        logger.debug(
+            "Price for '%s': base=%.2f demand_factor=%.2f → %.2f",
+            plan,
+            base,
+            demand_factor,
+            price)
         return price
 
     def _compute_demand_factor(self, usage_pct: float) -> float:
@@ -77,7 +81,7 @@ class PricingEngine:
     # Plan management
     # ------------------------------------------------------------------
 
-    def list_plans(self) -> List[Dict[str, Any]]:
+    def list_plans(self) -> list[dict[str, Any]]:
         """Return all available plans with current prices."""
         return [
             {**v, "plan_key": k, "current_price_usd": self.get_price(k)}
@@ -102,7 +106,7 @@ class PricingEngine:
         self._demand_multiplier = multiplier
         logger.info("Demand multiplier set to %.2f", multiplier)
 
-    def get_pricing_summary(self) -> Dict[str, Any]:
+    def get_pricing_summary(self) -> dict[str, Any]:
         return {
             "demand_multiplier": self._demand_multiplier,
             "plans": self.list_plans(),
