@@ -1,7 +1,7 @@
 """🧠 Orchestrator Agent - Master coordinator for all ECO-IA agents."""
 
-import asyncio
 import logging
+from collections.abc import Awaitable, Callable
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -48,6 +48,12 @@ class OrchestratorAgent(AgentBase):
         self.llm = llm
         self.scheduler = TaskScheduler()
         self._agent_registry: Dict[str, Dict[str, Any]] = {}
+        self._agent_executors: dict[str, Callable[[dict[str, Any]], Awaitable[dict[str, Any]]]] = {}
+        self._task_routes: dict[str, str] = {
+            task_type: agent_name
+            for agent_name, task_types in self.get_config("task_routes", {}).items()
+            for task_type in task_types
+        }
         self._decisions_log: List[Dict[str, Any]] = []
 
     # ------------------------------------------------------------------
@@ -90,6 +96,10 @@ class OrchestratorAgent(AgentBase):
         if task_type == "list_agents":
             return {"agents": list(self._agent_registry.values())}
 
+        target_agent = self._resolve_target_agent(task)
+        if target_agent:
+            return await self._route_task(target_agent, task)
+
         # Default: broadcast to all agents
         await self.send_message("*", task)
         return {"status": "broadcasted", "task": task_type}
@@ -100,9 +110,15 @@ class OrchestratorAgent(AgentBase):
 
     def _register_agent(self, task: Dict[str, Any]) -> Dict[str, Any]:
         agent_name = task.get("agent_name", "unknown")
+        executor = task.get("executor")
+        if executor:
+            self._agent_executors[agent_name] = executor
+        for task_type in task.get("task_types", []):
+            self._task_routes[task_type] = agent_name
         self._agent_registry[agent_name] = {
             "name": agent_name,
             "description": task.get("description", ""),
+            "task_types": task.get("task_types", []),
             "registered_at": datetime.utcnow().isoformat(),
             "status": "active",
         }
@@ -219,3 +235,24 @@ class OrchestratorAgent(AgentBase):
         }
         self._decisions_log.append(decision)
         return decision
+
+    def _resolve_target_agent(self, task: Dict[str, Any]) -> str | None:
+        explicit_target = task.get("target_agent") or task.get("agent")
+        if explicit_target in self._agent_executors:
+            return explicit_target
+        return self._task_routes.get(task.get("type", ""))
+
+    async def _route_task(self, agent_name: str, task: Dict[str, Any]) -> Dict[str, Any]:
+        executor = self._agent_executors.get(agent_name)
+        if not executor:
+            return {"status": "unavailable", "agent": agent_name}
+
+        routed_task = dict(task)
+        routed_task.setdefault("target_agent", agent_name)
+        result = await executor(routed_task)
+        return {
+            "status": "routed",
+            "agent": agent_name,
+            "task": routed_task.get("type"),
+            "result": result,
+        }

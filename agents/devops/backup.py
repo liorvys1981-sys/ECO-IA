@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import shutil
+import subprocess
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -33,11 +34,10 @@ class BackupManager:
             source = Path(source_path)
             if source.exists():
                 destination = target_dir / source.name
-                if source.is_dir():
-                    shutil.copytree(source, destination, dirs_exist_ok=True)
-                else:
-                    shutil.copy2(source, destination)
+                sync_result = self._sync_path(source, destination)
                 copied.append(str(source))
+                if sync_result["status"] != "success":
+                    missing.append(str(source))
             else:
                 missing.append(str(source))
 
@@ -69,3 +69,26 @@ class BackupManager:
                     shutil.rmtree(child, ignore_errors=True)
                 else:
                     child.unlink(missing_ok=True)
+
+    def _sync_path(self, source: Path, destination: Path) -> dict[str, Any]:
+        rsync_source = f"{source}/" if source.is_dir() else str(source)
+        command = ["rsync", "-a", rsync_source, str(destination)]
+        try:
+            result = subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        except FileNotFoundError:
+            result = None
+
+        if result and result.returncode == 0:
+            return {"status": "success", "method": "rsync"}
+
+        if source.is_dir():
+            shutil.copytree(source, destination, dirs_exist_ok=True)
+        else:
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, destination)
+        return {"status": "success", "method": "shutil"}

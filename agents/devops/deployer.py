@@ -6,7 +6,7 @@ from typing import Any
 
 
 class Deployer:
-    def __init__(self, compose_file: str = "docker/docker-compose.yml") -> None:
+    def __init__(self, compose_file: str = "docker-compose.yml") -> None:
         self.compose_file = compose_file
         self._events: list[dict[str, Any]] = []
 

@@ -10,6 +10,15 @@ from .reporter import Reporter
 
 
 class AnalyticsAgent(AgentBase):
+    supported_task_types = (
+        "analytics_task",
+        "record_metric",
+        "check_metric",
+        "snapshot",
+        "daily_report",
+        "kpis",
+    )
+
     def __init__(
         self,
         message_bus=None,

@@ -10,6 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import pytest
 
 from core.communication import Message, MessageBus
+from core.agent_manager import AgentManager
 from core.scheduler import TaskScheduler
 from core.llm_connector import LLMConnector
 
@@ -29,6 +30,7 @@ from agents.security.intrusion_detector import IntrusionDetector
 from agents.analytics.predictor import Predictor
 from agents.analytics.dashboard import DashboardData
 from agents.analytics.reporter import Reporter
+from orchestrator import OrchestratorAgent
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -130,6 +132,42 @@ class TestLLMConnector:
         info = llm.get_info()
         assert info["provider"] == "openai"
         assert "model" in info
+
+
+class TestAgentManager:
+    @pytest.mark.asyncio
+    async def test_initialize_all_registers_specialists(self):
+        manager = AgentManager()
+        status = await manager.initialize_all()
+        assert status["total"] == 6
+        orchestrator = manager.agents["orchestrator"]
+        registered = orchestrator.execute  # keep reference for type narrowing
+        assert callable(registered)
+        assert "monetization" in orchestrator._agent_registry  # noqa: SLF001
+        await manager.stop_all()
+
+
+class TestOrchestratorRouting:
+    @pytest.mark.asyncio
+    async def test_routes_task_to_registered_agent(self):
+        orchestrator = OrchestratorAgent()
+
+        async def fake_execute(task):
+            return {"handled": task["type"]}
+
+        orchestrator._register_agent(  # noqa: SLF001
+            {
+                "agent_name": "monetization",
+                "description": "test agent",
+                "executor": fake_execute,
+                "task_types": ["list_plans"],
+            }
+        )
+
+        result = await orchestrator.execute({"type": "list_plans"})
+        assert result["status"] == "routed"
+        assert result["agent"] == "monetization"
+        assert result["result"]["handled"] == "list_plans"
 
 
 # ──────────────────────────────────────────────────────────────────────────────

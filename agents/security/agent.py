@@ -10,6 +10,13 @@ from .intrusion_detector import IntrusionDetector
 
 
 class SecurityAgent(AgentBase):
+    supported_task_types = (
+        "security_task",
+        "analyse_auth_log",
+        "audit",
+        "block_ip",
+    )
+
     def __init__(
         self,
         message_bus=None,

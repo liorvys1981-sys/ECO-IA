@@ -10,6 +10,20 @@ from .pricing import PricingEngine
 
 
 class MonetizationAgent(AgentBase):
+    supported_task_types = (
+        "billing_task",
+        "create_client",
+        "list_clients",
+        "upgrade_plan",
+        "get_price",
+        "list_plans",
+        "create_invoice",
+        "check_failed_payments",
+        "detect_upsell_opportunities",
+        "payment_succeeded",
+        "payment_failed",
+    )
+
     def __init__(
         self,
         message_bus=None,
@@ -71,6 +85,27 @@ class MonetizationAgent(AgentBase):
                 task["description"],
             )
             return {"status": "created", "invoice": invoice}
+
+        if task_type == "check_failed_payments":
+            invoices = await self.billing_manager.list_invoices()
+            failed = [
+                invoice
+                for invoice in invoices
+                if invoice.get("status") == "failed"
+                or invoice.get("params", {}).get("status") == "failed"
+            ]
+            return {"checked": len(invoices), "failed_invoices": failed}
+
+        if task_type == "detect_upsell_opportunities":
+            return {"opportunities": self.client_manager.detect_upsell_opportunities()}
+
+        if task_type == "payment_succeeded":
+            invoice_id = task.get("invoice_id", "unknown")
+            return {"status": "processed", "action": "payment_recorded", "invoice_id": invoice_id}
+
+        if task_type == "payment_failed":
+            invoice_id = task.get("invoice_id", "unknown")
+            return {"status": "processed", "action": "payment_failed", "invoice_id": invoice_id}
 
         if task_type == "summary":
             return {

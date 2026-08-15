@@ -76,7 +76,12 @@ class AgentManager:
             if name == "orchestrator":
                 continue
             orchestrator._register_agent(  # noqa: SLF001
-                {"agent_name": agent.name, "description": agent.description}
+                {
+                    "agent_name": agent.name,
+                    "description": agent.description,
+                    "executor": agent.execute,
+                    "task_types": list(getattr(agent, "supported_task_types", ())),
+                }
             )
 
     async def initialize_all(self) -> dict[str, Any]:

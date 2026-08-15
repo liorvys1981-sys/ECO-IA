@@ -21,17 +21,36 @@ class ProcessRequest(BaseModel):
 
 @router.get("/hosting/plans")
 async def get_hosting_plans(request: Request) -> dict[str, Any]:
-    monetization = getattr(request.app.state.agent_manager, "agents", {}).get("monetization")
-    if monetization:
-        return await monetization.execute({"type": "list_plans"})
+    orchestrator = getattr(request.app.state.agent_manager, "agents", {}).get("orchestrator")
+    if orchestrator:
+        routed = await orchestrator.execute({"type": "list_plans"})
+        if routed.get("status") == "routed":
+            return routed["result"]
     return {"plans": hosting_manager.get_plans()}
 
 
 @router.get("/hosting/status")
-async def get_hosting_status() -> dict[str, Any]:
+async def get_hosting_status(request: Request) -> dict[str, Any]:
+    orchestrator = getattr(request.app.state.agent_manager, "agents", {}).get("orchestrator")
+    if orchestrator:
+        routed = await orchestrator.execute({"type": "status", "target_agent": "devops"})
+        if routed.get("status") == "routed":
+            services_status = routed["result"].get("services", {})
+            if services_status and services_status.get("status") == "operational":
+                return services_status
     return hosting_manager.get_service_status()
 
 
 @router.post("/data/process")
-async def process_data(payload: ProcessRequest) -> dict[str, Any]:
-    return await data_processor.process(payload.data, payload.operation, payload.options)
+async def process_data(payload: ProcessRequest, request: Request) -> dict[str, Any]:
+    result = await data_processor.process(payload.data, payload.operation, payload.options)
+    analytics = getattr(request.app.state.agent_manager, "agents", {}).get("analytics")
+    if analytics:
+        await analytics.execute(
+            {
+                "type": "record_metric",
+                "metric": "processed_requests",
+                "value": 1.0,
+            }
+        )
+    return result

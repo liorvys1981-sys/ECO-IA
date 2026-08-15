@@ -18,7 +18,10 @@ async def admin_health(request: Request) -> dict:
 
 
 @router.get("/metrics")
-async def admin_metrics() -> dict:
+async def admin_metrics(request: Request) -> dict:
+    resources = request.app.state.agent_manager.agents.get("resources")
+    if resources:
+        return await resources.execute({"type": "metrics"})
     return optimizer.get_metrics()
 
 

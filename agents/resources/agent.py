@@ -10,6 +10,14 @@ from .scaler import AutoScaler
 
 
 class ResourcesAgent(AgentBase):
+    supported_task_types = (
+        "resource_task",
+        "metrics",
+        "analyse",
+        "scale",
+        "cleanup",
+    )
+
     def __init__(
         self,
         message_bus=None,

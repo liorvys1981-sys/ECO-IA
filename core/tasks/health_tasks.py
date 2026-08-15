@@ -1,14 +1,20 @@
 """Health and cleanup Celery tasks."""
 
-from agents.resources.cleaner import Cleaner
-from agents.resources.optimizer import ResourceOptimizer
+import asyncio
+
+from agents.devops.agent import DevOpsAgent
+from agents.resources.agent import ResourcesAgent
 
 
 def check_all_services() -> dict:
-    optimizer = ResourceOptimizer()
-    return optimizer.analyse()
+    devops = DevOpsAgent()
+    resources = ResourcesAgent()
+    return {
+        "devops": asyncio.run(devops.execute({"type": "check_health"})),
+        "resources": asyncio.run(resources.execute({"type": "analyse"})),
+    }
 
 
 def cleanup_resources() -> list[dict]:
-    cleaner = Cleaner(temp_dirs=[])
-    return cleaner.run_all()
+    resources = ResourcesAgent()
+    return asyncio.run(resources.execute({"type": "cleanup"}))["results"]

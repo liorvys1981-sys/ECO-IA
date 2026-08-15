@@ -1,12 +1,12 @@
 """Analytics-related Celery tasks."""
 
-from agents.analytics.dashboard import DashboardData
-from agents.analytics.reporter import Reporter
+import asyncio
+
+from agents.analytics.agent import AnalyticsAgent
 
 
 def send_daily_report() -> dict:
-    dashboard = DashboardData()
-    reporter = Reporter()
-    snapshot = dashboard.snapshot()
-    report = reporter.generate_daily_report(snapshot)
+    agent = AnalyticsAgent()
+    snapshot = asyncio.run(agent.execute({"type": "snapshot"}))
+    report = asyncio.run(agent.execute({"type": "daily_report", "data": snapshot}))
     return {"status": "generated", "report": report}

@@ -2,6 +2,43 @@ orchestrator:
   heartbeat_interval: 30
   health_check_interval: 60
   report_interval: 3600
+  task_routes:
+    monetization:
+      - billing_task
+      - create_client
+      - list_clients
+      - upgrade_plan
+      - get_price
+      - list_plans
+      - create_invoice
+      - check_failed_payments
+      - detect_upsell_opportunities
+      - payment_succeeded
+      - payment_failed
+    devops:
+      - deployment_task
+      - run_backup
+      - deploy_service
+      - apply_security_updates
+      - check_health
+    resources:
+      - resource_task
+      - metrics
+      - analyse
+      - scale
+      - cleanup
+    security:
+      - security_task
+      - analyse_auth_log
+      - audit
+      - block_ip
+    analytics:
+      - analytics_task
+      - record_metric
+      - check_metric
+      - snapshot
+      - daily_report
+      - kpis
   llm:
     provider: openai
     model: gpt-4o-mini

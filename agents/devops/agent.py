@@ -10,6 +10,14 @@ from .deployer import Deployer
 
 
 class DevOpsAgent(AgentBase):
+    supported_task_types = (
+        "deployment_task",
+        "run_backup",
+        "deploy_service",
+        "apply_security_updates",
+        "check_health",
+    )
+
     def __init__(
         self,
         message_bus=None,
@@ -32,7 +40,7 @@ class DevOpsAgent(AgentBase):
             local_paths=backup_config.get("local_paths"),
             retention_days=backup_config.get("retention_days", 30),
         )
-        self.deployer = Deployer()
+        self.deployer = Deployer(compose_file=self.get_config("compose_file", "docker-compose.yml"))
 
     async def on_start(self) -> None:
         await self.auto_healer.start()
