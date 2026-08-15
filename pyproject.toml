@@ -23,7 +23,7 @@ dev = ["pytest>=8.3", "pytest-asyncio>=0.26", "pytest-cov>=6.1"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["tests"]
+testpaths = ["."]
 
 [tool.ruff]
 line-length = 100
