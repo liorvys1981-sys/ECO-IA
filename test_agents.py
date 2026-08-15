@@ -1,37 +1,28 @@
 """Tests for ECO-IA agents."""
 
-import asyncio
-import sys
 import os
+import sys
 
 # Ensure project root is on the path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pytest
 
-from core.communication import Message, MessageBus
-from core.agent_manager import AgentManager
-from core.scheduler import TaskScheduler
-from core.llm_connector import LLMConnector
-
+from agents.analytics.dashboard import DashboardData
+from agents.analytics.predictor import Predictor
+from agents.analytics.reporter import Reporter
+from agents.devops.backup import BackupManager
 from agents.monetization.billing import BillingManager
 from agents.monetization.clients import ClientManager
 from agents.monetization.pricing import PricingEngine
-
-from agents.devops.backup import BackupManager
-from agents.devops.auto_heal import AutoHealer
-
 from agents.resources.optimizer import ResourceOptimizer
-from agents.resources.scaler import AutoScaler
-
 from agents.security.firewall import FirewallManager
 from agents.security.intrusion_detector import IntrusionDetector
-
-from agents.analytics.predictor import Predictor
-from agents.analytics.dashboard import DashboardData
-from agents.analytics.reporter import Reporter
+from core.agent_manager import AgentManager
+from core.communication import Message, MessageBus
+from core.llm_connector import LLMConnector
+from core.scheduler import TaskScheduler
 from orchestrator import OrchestratorAgent
-
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Core – MessageBus
