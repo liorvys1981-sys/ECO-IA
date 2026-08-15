@@ -21,7 +21,7 @@ class Cleaner:
         max_log_size_mb: float = 100.0,
     ) -> None:
         self.log_dirs = log_dirs or ["/var/log/eco-ia", "/opt/eco-ia/logs"]
-        self.temp_dirs = temp_dirs or []  # caller must supply safe temp dirs explicitly
+        self.temp_dirs = [path for path in (temp_dirs or []) if path]
         self.max_log_age_days = max_log_age_days
         self.max_log_size_mb = max_log_size_mb
         self._cleanup_log: list[dict[str, Any]] = []
