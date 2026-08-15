@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class AutoScaler:
-    def __init__(self, compose_file="docker/docker-compose.yml",
+    def __init__(self, compose_file="docker-compose.yml",
                  min_replicas=1, max_replicas=10,
                  scale_up_cpu_threshold=70.0, scale_down_cpu_threshold=30.0):
         self.compose_file = compose_file

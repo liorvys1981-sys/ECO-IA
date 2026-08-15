@@ -2,6 +2,8 @@
 import uuid
 from datetime import datetime
 
+from sqlalchemy.orm import Session
+
 from database.models import (
     AgentEvent,
     APIUsage,
@@ -11,7 +13,6 @@ from database.models import (
     SecurityAlert,
     SystemMetric,
 )
-from sqlalchemy.orm import Session
 
 # ── Clients ─────────────────────────────────────────────────────────────
 

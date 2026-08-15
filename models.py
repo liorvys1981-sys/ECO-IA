@@ -3,10 +3,11 @@ import uuid
 from datetime import datetime
 from enum import StrEnum
 
-from database.connection import Base
 from sqlalchemy import Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+
+from database.connection import Base
 
 
 class PlanEnum(StrEnum):

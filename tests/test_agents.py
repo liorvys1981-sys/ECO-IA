@@ -2,7 +2,14 @@
 
 from pathlib import Path
 
-from src.agents import AnalyticsAgent, BaseAgent, DevOpsAgent, MonetizationAgent, ResourcesAgent, SecurityAgent
+from src.agents import (
+    AnalyticsAgent,
+    BaseAgent,
+    DevOpsAgent,
+    MonetizationAgent,
+    ResourcesAgent,
+    SecurityAgent,
+)
 from src.orchestrator import MasterAgent
 
 REPO_ROOT = Path(__file__).resolve().parent.parent

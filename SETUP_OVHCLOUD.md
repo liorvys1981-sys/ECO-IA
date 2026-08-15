@@ -30,7 +30,7 @@ cd /opt/eco-ia
 ## Paso 3 — Ejecutar instalación automática
 
 ```bash
-sudo bash scripts/install.sh
+sudo bash scripts/setup.sh
 ```
 
 El script hace automáticamente:
@@ -115,13 +115,13 @@ bash /opt/eco-ia/scripts/health_check.sh
 
 ```bash
 # Ver logs de todos los contenedores
-docker compose -f /opt/eco-ia/docker/docker-compose.yml logs -f
+docker compose -f /opt/eco-ia/docker-compose.yml logs -f
 
 # Ver solo la API
-docker compose -f /opt/eco-ia/docker/docker-compose.yml logs -f eco-ia-api
+docker compose -f /opt/eco-ia/docker-compose.yml logs -f eco-ia-api
 
 # Estado de contenedores
-docker compose -f /opt/eco-ia/docker/docker-compose.yml ps
+docker compose -f /opt/eco-ia/docker-compose.yml ps
 
 # Reiniciar todo
 systemctl restart eco-ia
@@ -131,7 +131,7 @@ systemctl stop eco-ia
 
 # Actualizar desde GitHub
 cd /opt/eco-ia && git pull && \
-  docker compose -f docker/docker-compose.yml up -d --build
+  docker compose -f docker-compose.yml up -d --build
 ```
 
 ---
