@@ -70,9 +70,9 @@ class FirewallManager:
         result = self._ufw("deny", "from", ip, "to", "any")
         record = self._record_rule(
             "block",
-            "ip": ip,
-            "reason": reason,
-            "success": result["returncode"] == 0,
+            ip=ip,
+            reason=reason,
+            success=result["returncode"] == 0,
         )
         if record["success"] and ip not in self._blocked_ips:
             self._blocked_ips.append(ip)
