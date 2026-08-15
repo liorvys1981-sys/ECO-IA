@@ -423,6 +423,30 @@ class TestFirewallManager:
         result = self.fw.block_ip("192.168.1.100", reason="test")
         assert result["ip"] == "192.168.1.100"
 
+    @pytest.mark.parametrize("ip", ["999.1.1.1", "192.168.1.1/99", "256.0.0.1"])
+    def test_invalid_ipv4_ranges_raise(self, ip):
+        with pytest.raises(ValueError, match="Invalid IP"):
+            self.fw.block_ip(ip)
+
+    def test_missing_ufw_returns_failed_record(self):
+        with patch("firewall.shutil.which", return_value=None):
+            result = self.fw.block_ip("192.168.1.100", reason="test")
+
+        assert result["success"] is False
+        assert self.fw.get_rule_log(limit=1)[0]["action"] == "block"
+
+    def test_allow_and_deny_port_are_logged(self):
+        with patch.object(self.fw, "_ufw", side_effect=[{"returncode": 0}, {"returncode": 0}]):
+            allow_result = self.fw.allow_port(80)
+            deny_result = self.fw.deny_port(80)
+
+        assert allow_result["success"] is True
+        assert deny_result["success"] is True
+        assert [entry["action"] for entry in self.fw.get_rule_log(limit=2)] == [
+            "allow_port",
+            "deny_port",
+        ]
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Security – IntrusionDetector
