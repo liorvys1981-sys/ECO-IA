@@ -3,9 +3,9 @@
 import asyncio
 import logging
 import subprocess
+from collections.abc import Callable, Coroutine
 from datetime import datetime
 from typing import Any
-from collections.abc import Callable, Coroutine
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +71,10 @@ class AutoHealer:
         )
 
         if attempts >= self.max_restart_attempts:
-            logger.error("Max restart attempts reached for '%s'. Manual intervention required.", service)
+            logger.error(
+                "Max restart attempts reached for '%s'. Manual intervention required.",
+                service,
+            )
             if self._on_failure:
                 await self._on_failure(service, attempts)
             record = {
