@@ -4,7 +4,7 @@ import logging
 import uuid
 from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ class Message:
     sender: str
     target: str
     content: dict[str, Any]
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     message_id: str | None = None
 
     def __post_init__(self):
