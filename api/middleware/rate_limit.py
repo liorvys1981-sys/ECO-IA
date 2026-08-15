@@ -2,14 +2,13 @@
 
 import time
 from collections import defaultdict, deque
-from typing import Deque, Dict
 
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    _requests: Dict[str, Deque[float]] = defaultdict(deque)
+    _requests: dict[str, deque[float]] = defaultdict(deque)
     _limit = 100
     _window_seconds = 60.0
 

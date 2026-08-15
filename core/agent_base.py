@@ -4,10 +4,9 @@ import asyncio
 import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 
 from .communication import Message, MessageBus
-
 
 logger = logging.getLogger(__name__)
 
@@ -17,19 +16,19 @@ class AgentBase(ABC):
         self,
         name: str,
         description: str,
-        message_bus: Optional[MessageBus] = None,
-        config: Optional[Dict[str, Any]] = None,
+        message_bus: MessageBus | None = None,
+        config: dict[str, Any] | None = None,
     ) -> None:
         self.name = name
         self.description = description
         self.message_bus = message_bus
         self.config = config or {}
         self.is_running = False
-        self.last_heartbeat: Optional[datetime] = None
+        self.last_heartbeat: datetime | None = None
         self.tasks_completed = 0
         self.tasks_failed = 0
         self._logger = logging.getLogger(f"eco_ia.agents.{name}")
-        self._heartbeat_task: Optional[asyncio.Task[None]] = None
+        self._heartbeat_task: asyncio.Task[None] | None = None
 
     async def start(self) -> None:
         self.is_running = True
@@ -56,7 +55,7 @@ class AgentBase(ABC):
         """Called when the agent stops."""
 
     @abstractmethod
-    async def execute(self, task: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute(self, task: dict[str, Any]) -> dict[str, Any]:
         """Execute a task."""
 
     async def _handle_message(self, message: Message) -> None:
@@ -72,7 +71,7 @@ class AgentBase(ABC):
                 {"type": "health_pong", "agent_name": self.name},
             )
 
-    async def send_message(self, target: str, content: Dict[str, Any]) -> None:
+    async def send_message(self, target: str, content: dict[str, Any]) -> None:
         if not self.message_bus:
             return
         await self.message_bus.publish(Message(sender=self.name, target=target, content=content))
@@ -83,7 +82,7 @@ class AgentBase(ABC):
             self.last_heartbeat = datetime.utcnow()
             await asyncio.sleep(interval)
 
-    def health_status(self) -> Dict[str, Any]:
+    def health_status(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "description": self.description,

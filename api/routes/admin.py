@@ -4,7 +4,6 @@ from fastapi import APIRouter, Request
 
 from agents.resources.optimizer import ResourceOptimizer
 
-
 router = APIRouter()
 optimizer = ResourceOptimizer()
 

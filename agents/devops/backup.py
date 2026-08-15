@@ -6,23 +6,23 @@ import shutil
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class BackupManager:
     def __init__(
         self,
-        local_paths: Optional[List[str]] = None,
+        local_paths: list[str] | None = None,
         retention_days: int = 30,
-        backup_root: Optional[str] = None,
+        backup_root: str | None = None,
     ) -> None:
         self.local_paths = local_paths or ["/opt/eco-ia/data", "/opt/eco-ia/config"]
         self.retention_days = retention_days
         self.backup_root = Path(backup_root or Path.cwd() / ".backup-artifacts")
         self.backup_root.mkdir(parents=True, exist_ok=True)
-        self._history: List[Dict[str, Any]] = []
+        self._history: list[dict[str, Any]] = []
 
-    def run_backup(self, label: str = "daily") -> Dict[str, Any]:
+    def run_backup(self, label: str = "daily") -> dict[str, Any]:
         timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
         backup_name = f"eco-ia-backup-{label}-{timestamp}-{uuid.uuid4().hex[:6]}"
         target_dir = self.backup_root / backup_name
@@ -55,10 +55,10 @@ class BackupManager:
         self._prune_old_backups()
         return result
 
-    def list_backups(self) -> List[Dict[str, Any]]:
+    def list_backups(self) -> list[dict[str, Any]]:
         return self._history[-50:]
 
-    def get_latest_backup(self) -> Optional[Dict[str, Any]]:
+    def get_latest_backup(self) -> dict[str, Any] | None:
         return self._history[-1] if self._history else None
 
     def _prune_old_backups(self) -> None:

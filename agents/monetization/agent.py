@@ -1,6 +1,6 @@
 """Monetization agent wrapper."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from core.agent_base import AgentBase
 
@@ -13,7 +13,7 @@ class MonetizationAgent(AgentBase):
     def __init__(
         self,
         message_bus=None,
-        config: Optional[Dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(
             name="monetization",
@@ -33,7 +33,7 @@ class MonetizationAgent(AgentBase):
     async def on_stop(self) -> None:
         return None
 
-    async def execute(self, task: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute(self, task: dict[str, Any]) -> dict[str, Any]:
         task_type = task.get("type", "summary")
 
         if task_type == "create_client":
@@ -55,9 +55,10 @@ class MonetizationAgent(AgentBase):
             return {"status": "updated" if updated else "not_found"}
 
         if task_type == "get_price":
+            price = self.pricing_engine.get_price(task["plan"], task.get("usage_pct", 0.0))
             return {
                 "plan": task["plan"],
-                "price_usd": self.pricing_engine.get_price(task["plan"], task.get("usage_pct", 0.0)),
+                "price_usd": price,
             }
 
         if task_type == "list_plans":

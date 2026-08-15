@@ -2,8 +2,7 @@
 
 import logging
 import os
-from typing import Any, Dict, List, Optional
-
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -12,9 +11,9 @@ class LLMConnector:
     def __init__(
         self,
         provider: str = "openai",
-        model: Optional[str] = None,
-        api_key: Optional[str] = None,
-        base_url: Optional[str] = None,
+        model: str | None = None,
+        api_key: str | None = None,
+        base_url: str | None = None,
         temperature: float = 0.7,
         max_tokens: int = 2048,
     ) -> None:
@@ -35,8 +34,8 @@ class LLMConnector:
 
     async def chat(
         self,
-        messages: List[Dict[str, str]],
-        system_prompt: Optional[str] = None,
+        messages: list[dict[str, str]],
+        system_prompt: str | None = None,
     ) -> str:
         payload = list(messages)
         if system_prompt:
@@ -48,7 +47,7 @@ class LLMConnector:
     async def complete(self, prompt: str) -> str:
         return await self.chat([{"role": "user", "content": prompt}])
 
-    async def _openai_chat(self, messages: List[Dict[str, str]]) -> str:
+    async def _openai_chat(self, messages: list[dict[str, str]]) -> str:
         try:
             import openai
 
@@ -66,7 +65,7 @@ class LLMConnector:
             logger.error("OpenAI error: %s", exc)
             raise
 
-    async def _ollama_chat(self, messages: List[Dict[str, str]]) -> str:
+    async def _ollama_chat(self, messages: list[dict[str, str]]) -> str:
         try:
             import httpx
 
@@ -91,7 +90,7 @@ class LLMConnector:
             logger.error("Ollama error: %s", exc)
             raise
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         return {
             "provider": self.provider,
             "model": self.model,

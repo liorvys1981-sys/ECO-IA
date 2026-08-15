@@ -6,7 +6,6 @@ import os
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-
 PUBLIC_PATH_PREFIXES = (
     "/",
     "/health",
@@ -22,9 +21,8 @@ PUBLIC_PATH_PREFIXES = (
 class APIKeyMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         path = request.url.path
-        if path in {"/", "/health", "/docs", "/redoc", "/openapi.json", "/dashboard"} or path.startswith(
-            ("/static", "/api/v1/webhooks/")
-        ):
+        public_paths = {"/", "/health", "/docs", "/redoc", "/openapi.json", "/dashboard"}
+        if path in public_paths or path.startswith(("/static", "/api/v1/webhooks/")):
             return await call_next(request)
 
         api_key = os.getenv("ECO_IA_API_KEY", "change-me-in-production")

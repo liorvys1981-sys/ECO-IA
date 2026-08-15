@@ -2,15 +2,21 @@
 
 import logging
 import os
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
+from agents.analytics import AnalyticsAgent
+from agents.devops import DevOpsAgent
+from agents.monetization import MonetizationAgent
+from agents.orchestrator import OrchestratorAgent
+from agents.resources import ResourcesAgent
+from agents.security import SecurityAgent
 from core.agent_manager import AgentManager
 from core.communication import MessageBus
 from core.llm_connector import LLMConnector
@@ -19,11 +25,62 @@ from .middleware.auth import APIKeyMiddleware
 from .middleware.rate_limit import RateLimitMiddleware
 from .routes import admin, services, webhooks
 
-
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+
+
+def _build_fallback_manager() -> AgentManager:
+    message_bus = MessageBus()
+    llm = LLMConnector(
+        provider=os.getenv("LLM_PROVIDER", "openai"),
+        model=os.getenv("LLM_MODEL", "gpt-4o-mini"),
+    )
+    manager = AgentManager(message_bus=message_bus, llm=llm)
+    manager.agents = {
+        "orchestrator": OrchestratorAgent(
+            message_bus=message_bus,
+            llm=llm,
+            config=manager.config.get("orchestrator", {}),
+        ),
+        "monetization": MonetizationAgent(
+            message_bus=message_bus,
+            config=manager.config.get("monetization", {}),
+        ),
+        "devops": DevOpsAgent(
+            message_bus=message_bus,
+            config=manager.config.get("devops", {}),
+        ),
+        "resources": ResourcesAgent(
+            message_bus=message_bus,
+            config=manager.config.get("resources", {}),
+        ),
+        "security": SecurityAgent(
+            message_bus=message_bus,
+            config=manager.config.get("security", {}),
+        ),
+        "analytics": AnalyticsAgent(
+            message_bus=message_bus,
+            config=manager.config.get("analytics", {}),
+        ),
+    }
+    orchestrator = manager.agents["orchestrator"]
+    if not orchestrator.scheduler.list_tasks():
+        orchestrator.scheduler.register(
+            "health_check",
+            orchestrator._check_agents_health,  # noqa: SLF001
+            interval_seconds=orchestrator.get_config("health_check_interval", 60),
+            description="Periodic health check of all registered agents",
+        )
+        orchestrator.scheduler.register(
+            "executive_report",
+            orchestrator._generate_executive_report,  # noqa: SLF001
+            interval_seconds=orchestrator.get_config("report_interval", 3600),
+            description="Hourly executive report",
+        )
+    manager._register_agents()  # noqa: SLF001
+    return manager
 
 
 @asynccontextmanager
@@ -54,6 +111,8 @@ def create_app() -> FastAPI:
         docs_url="/docs",
         redoc_url="/redoc",
     )
+    app.state.message_bus = MessageBus()
+    app.state.agent_manager = _build_fallback_manager()
 
     app.add_middleware(
         CORSMiddleware,

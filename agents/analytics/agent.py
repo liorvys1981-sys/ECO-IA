@@ -1,6 +1,6 @@
 """Analytics agent wrapper."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from core.agent_base import AgentBase
 
@@ -13,7 +13,7 @@ class AnalyticsAgent(AgentBase):
     def __init__(
         self,
         message_bus=None,
-        config: Optional[Dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(
             name="analytics",
@@ -35,7 +35,7 @@ class AnalyticsAgent(AgentBase):
     async def on_stop(self) -> None:
         return None
 
-    async def execute(self, task: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute(self, task: dict[str, Any]) -> dict[str, Any]:
         task_type = task.get("type", "kpis")
 
         if task_type == "record_metric":

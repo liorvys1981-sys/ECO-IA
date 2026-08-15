@@ -2,15 +2,15 @@
 
 import subprocess
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any
 
 
 class Deployer:
     def __init__(self, compose_file: str = "docker/docker-compose.yml") -> None:
         self.compose_file = compose_file
-        self._events: List[Dict[str, Any]] = []
+        self._events: list[dict[str, Any]] = []
 
-    def deploy_service(self, service: str) -> Dict[str, Any]:
+    def deploy_service(self, service: str) -> dict[str, Any]:
         result = subprocess.run(
             ["docker", "compose", "-f", self.compose_file, "up", "-d", service],
             capture_output=True,
@@ -28,7 +28,7 @@ class Deployer:
         self._events.append(event)
         return event
 
-    def apply_security_updates(self) -> Dict[str, Any]:
+    def apply_security_updates(self) -> dict[str, Any]:
         result = subprocess.run(
             ["docker", "compose", "-f", self.compose_file, "pull"],
             capture_output=True,
@@ -45,7 +45,7 @@ class Deployer:
         self._events.append(event)
         return event
 
-    def get_service_status(self) -> Dict[str, Any]:
+    def get_service_status(self) -> dict[str, Any]:
         result = subprocess.run(
             ["docker", "compose", "-f", self.compose_file, "ps", "--format", "json"],
             capture_output=True,

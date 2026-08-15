@@ -2,9 +2,9 @@
 
 import asyncio
 import logging
+from collections.abc import Awaitable, Callable
 from datetime import datetime
-from typing import Any, Awaitable, Callable, Dict, List, Optional
-
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -21,15 +21,15 @@ class ScheduledTask:
         self.func = func
         self.interval_seconds = interval_seconds
         self.description = description
-        self.last_run: Optional[datetime] = None
+        self.last_run: datetime | None = None
         self.run_count = 0
         self.error_count = 0
-        self._task: Optional[asyncio.Task[None]] = None
+        self._task: asyncio.Task[None] | None = None
 
 
 class TaskScheduler:
     def __init__(self) -> None:
-        self._tasks: Dict[str, ScheduledTask] = {}
+        self._tasks: dict[str, ScheduledTask] = {}
         self._running = False
 
     def register(
@@ -80,7 +80,7 @@ class TaskScheduler:
                 scheduled.error_count += 1
                 logger.error("Task '%s' error: %s", scheduled.task_id, exc)
 
-    def list_tasks(self) -> List[Dict[str, Any]]:
+    def list_tasks(self) -> list[dict[str, Any]]:
         return [
             {
                 "task_id": task.task_id,

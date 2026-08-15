@@ -1,6 +1,6 @@
 """DevOps agent wrapper."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from core.agent_base import AgentBase
 
@@ -13,7 +13,7 @@ class DevOpsAgent(AgentBase):
     def __init__(
         self,
         message_bus=None,
-        config: Optional[Dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(
             name="devops",
@@ -40,7 +40,7 @@ class DevOpsAgent(AgentBase):
     async def on_stop(self) -> None:
         await self.auto_healer.stop()
 
-    async def execute(self, task: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute(self, task: dict[str, Any]) -> dict[str, Any]:
         task_type = task.get("type", "status")
 
         if task_type == "status":
