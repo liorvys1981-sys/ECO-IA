@@ -1,7 +1,7 @@
 """Dynamic pricing engine for ECO-IA services."""
 
-from copy import deepcopy
 import logging
+from copy import deepcopy
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -42,23 +42,89 @@ OVHCLOUD_US_IP_PRICING: dict[str, Any] = {
     "categories": {
         "dedicated_servers": [
             {"product": "Primary IPv4", "monthly_price_usd": 1.90},
-            {"product": "Additional single IP", "monthly_price_usd": 1.90, "setup_price_usd": 6.00},
-            {"product": "IP subnet /29", "usable_ip_addresses": 6, "monthly_price_usd": 16.00, "setup_price_usd": 39.00},
-            {"product": "IP subnet /28", "usable_ip_addresses": 14, "monthly_price_usd": 31.00, "setup_price_usd": 67.00},
-            {"product": "IP subnet /27", "usable_ip_addresses": 30, "monthly_price_usd": 61.00, "setup_price_usd": 121.00},
-            {"product": "IP subnet /26", "usable_ip_addresses": 62, "monthly_price_usd": 121.00, "setup_price_usd": 221.00},
-            {"product": "IP subnet /25", "usable_ip_addresses": 126, "monthly_price_usd": 242.00, "setup_price_usd": 299.00},
-            {"product": "IP subnet /24", "usable_ip_addresses": 254, "monthly_price_usd": 484.00, "setup_price_usd": 732.00},
+            {
+                "product": "Additional single IP",
+                "monthly_price_usd": 1.90,
+                "setup_price_usd": 6.00,
+            },
+            {
+                "product": "IP subnet /29",
+                "usable_ip_addresses": 6,
+                "monthly_price_usd": 16.00,
+                "setup_price_usd": 39.00,
+            },
+            {
+                "product": "IP subnet /28",
+                "usable_ip_addresses": 14,
+                "monthly_price_usd": 31.00,
+                "setup_price_usd": 67.00,
+            },
+            {
+                "product": "IP subnet /27",
+                "usable_ip_addresses": 30,
+                "monthly_price_usd": 61.00,
+                "setup_price_usd": 121.00,
+            },
+            {
+                "product": "IP subnet /26",
+                "usable_ip_addresses": 62,
+                "monthly_price_usd": 121.00,
+                "setup_price_usd": 221.00,
+            },
+            {
+                "product": "IP subnet /25",
+                "usable_ip_addresses": 126,
+                "monthly_price_usd": 242.00,
+                "setup_price_usd": 299.00,
+            },
+            {
+                "product": "IP subnet /24",
+                "usable_ip_addresses": 254,
+                "monthly_price_usd": 484.00,
+                "setup_price_usd": 732.00,
+            },
         ],
         "failover": [
-            {"product": "Failover IP", "monthly_price_usd": 5.00, "setup_price_usd": 5.50},
-            {"product": "Failover subnet /29", "monthly_price_usd": 25.00, "setup_price_usd": 39.00},
-            {"product": "Failover subnet /28", "monthly_price_usd": 40.00, "setup_price_usd": 67.00},
-            {"product": "Failover subnet /27", "monthly_price_usd": 70.00, "setup_price_usd": 121.00},
-            {"product": "Failover subnet /26", "monthly_price_usd": 131.00, "setup_price_usd": 221.00},
-            {"product": "Failover subnet /25", "monthly_price_usd": 251.00, "setup_price_usd": 410.00},
-            {"product": "Failover subnet /24", "monthly_price_usd": 493.00, "setup_price_usd": 732.00},
-            {"product": "Failover IPv6 subnet /64", "monthly_price_usd": 1.20, "setup_price_usd": 5.50},
+            {
+                "product": "Failover IP",
+                "monthly_price_usd": 5.00,
+                "setup_price_usd": 5.50,
+            },
+            {
+                "product": "Failover subnet /29",
+                "monthly_price_usd": 25.00,
+                "setup_price_usd": 39.00,
+            },
+            {
+                "product": "Failover subnet /28",
+                "monthly_price_usd": 40.00,
+                "setup_price_usd": 67.00,
+            },
+            {
+                "product": "Failover subnet /27",
+                "monthly_price_usd": 70.00,
+                "setup_price_usd": 121.00,
+            },
+            {
+                "product": "Failover subnet /26",
+                "monthly_price_usd": 131.00,
+                "setup_price_usd": 221.00,
+            },
+            {
+                "product": "Failover subnet /25",
+                "monthly_price_usd": 251.00,
+                "setup_price_usd": 410.00,
+            },
+            {
+                "product": "Failover subnet /24",
+                "monthly_price_usd": 493.00,
+                "setup_price_usd": 732.00,
+            },
+            {
+                "product": "Failover IPv6 subnet /64",
+                "monthly_price_usd": 1.20,
+                "setup_price_usd": 5.50,
+            },
             {
                 "product": "Additional IPv6 subnet /56",
                 "applies_to": "Dedicated servers",
@@ -67,27 +133,100 @@ OVHCLOUD_US_IP_PRICING: dict[str, Any] = {
             },
         ],
         "colocation": [
-            {"product": "Transfer subnet /30", "usable_ip_addresses": 2, "monthly_price_usd": 7.00, "setup_price_usd": 20.00},
-            {"product": "IP subnet /29", "usable_ip_addresses": 5, "monthly_price_usd": 16.00, "setup_price_usd": 39.00},
-            {"product": "IP subnet /28", "usable_ip_addresses": 13, "monthly_price_usd": 31.00, "setup_price_usd": 67.00},
-            {"product": "IP subnet /27", "usable_ip_addresses": 29, "monthly_price_usd": 61.00, "setup_price_usd": 121.00},
-            {"product": "IP subnet /26", "usable_ip_addresses": 61, "monthly_price_usd": 121.00, "setup_price_usd": 221.00},
-            {"product": "IP subnet /25", "usable_ip_addresses": 125, "monthly_price_usd": 242.00, "setup_price_usd": 299.00},
-            {"product": "IP subnet /24", "usable_ip_addresses": 253, "monthly_price_usd": 484.00, "setup_price_usd": 732.00},
+            {
+                "product": "Transfer subnet /30",
+                "usable_ip_addresses": 2,
+                "monthly_price_usd": 7.00,
+                "setup_price_usd": 20.00,
+            },
+            {
+                "product": "IP subnet /29",
+                "usable_ip_addresses": 5,
+                "monthly_price_usd": 16.00,
+                "setup_price_usd": 39.00,
+            },
+            {
+                "product": "IP subnet /28",
+                "usable_ip_addresses": 13,
+                "monthly_price_usd": 31.00,
+                "setup_price_usd": 67.00,
+            },
+            {
+                "product": "IP subnet /27",
+                "usable_ip_addresses": 29,
+                "monthly_price_usd": 61.00,
+                "setup_price_usd": 121.00,
+            },
+            {
+                "product": "IP subnet /26",
+                "usable_ip_addresses": 61,
+                "monthly_price_usd": 121.00,
+                "setup_price_usd": 221.00,
+            },
+            {
+                "product": "IP subnet /25",
+                "usable_ip_addresses": 125,
+                "monthly_price_usd": 242.00,
+                "setup_price_usd": 299.00,
+            },
+            {
+                "product": "IP subnet /24",
+                "usable_ip_addresses": 253,
+                "monthly_price_usd": 484.00,
+                "setup_price_usd": 732.00,
+            },
         ],
         "managed_servers": [
-            {"product": "Dedicated IPv4 address for SSL", "monthly_price_usd": 3.00, "setup_price_usd": 16.00},
+            {
+                "product": "Dedicated IPv4 address for SSL",
+                "monthly_price_usd": 3.00,
+                "setup_price_usd": 16.00,
+            },
         ],
         "web_hosting": [
-            {"product": "Dedicated IPv4 address for SSL", "monthly_price_usd": 5.00, "setup_price_usd": 16.00},
+            {
+                "product": "Dedicated IPv4 address for SSL",
+                "monthly_price_usd": 5.00,
+                "setup_price_usd": 16.00,
+            },
         ],
         "vswitch_ipv4": [
-            {"product": "IP subnet /29", "usable_ip_addresses": 5, "monthly_price_usd": 25.00, "setup_price_usd": 39.00},
-            {"product": "IP subnet /28", "usable_ip_addresses": 13, "monthly_price_usd": 40.00, "setup_price_usd": 67.00},
-            {"product": "IP subnet /27", "usable_ip_addresses": 29, "monthly_price_usd": 70.00, "setup_price_usd": 121.00},
-            {"product": "IP subnet /26", "usable_ip_addresses": 61, "monthly_price_usd": 131.00, "setup_price_usd": 221.00},
-            {"product": "IP subnet /25", "usable_ip_addresses": 125, "monthly_price_usd": 251.00, "setup_price_usd": 410.00},
-            {"product": "IP subnet /24", "usable_ip_addresses": 253, "monthly_price_usd": 493.00, "setup_price_usd": 732.00},
+            {
+                "product": "IP subnet /29",
+                "usable_ip_addresses": 5,
+                "monthly_price_usd": 25.00,
+                "setup_price_usd": 39.00,
+            },
+            {
+                "product": "IP subnet /28",
+                "usable_ip_addresses": 13,
+                "monthly_price_usd": 40.00,
+                "setup_price_usd": 67.00,
+            },
+            {
+                "product": "IP subnet /27",
+                "usable_ip_addresses": 29,
+                "monthly_price_usd": 70.00,
+                "setup_price_usd": 121.00,
+            },
+            {
+                "product": "IP subnet /26",
+                "usable_ip_addresses": 61,
+                "monthly_price_usd": 131.00,
+                "setup_price_usd": 221.00,
+            },
+            {
+                "product": "IP subnet /25",
+                "usable_ip_addresses": 125,
+                "monthly_price_usd": 251.00,
+                "setup_price_usd": 410.00,
+            },
+            {
+                "product": "IP subnet /24",
+                "usable_ip_addresses": 253,
+                "monthly_price_usd": 493.00,
+                "setup_price_usd": 732.00,
+            },
         ],
         "vswitch_ipv6": [
             {
