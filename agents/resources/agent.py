@@ -54,7 +54,16 @@ class ResourcesAgent(AgentBase):
         return None
 
     async def execute(self, task: dict[str, Any]) -> dict[str, Any]:
-        task_type = task.get("type", "analyse")
+        task_type = task.get("type", "summary")
+
+        if task_type in {"resource_task", "summary"}:
+            metrics = self.optimizer.get_metrics()
+            analysis = self.optimizer.analyse()
+            return {
+                "metrics": metrics,
+                "alerts": analysis.get("recommendations", []),
+                "cleanup": self.cleaner.get_cleanup_history(limit=5),
+            }
 
         if task_type == "metrics":
             return self.optimizer.get_metrics()

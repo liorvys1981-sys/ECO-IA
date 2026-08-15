@@ -37,6 +37,8 @@ class AnalyticsAgent(AgentBase):
         )
         self.dashboard = DashboardData()
         self.reporter = Reporter()
+        self._cpu_history: list[float] = []
+        self._ram_history: list[float] = []
 
     async def on_start(self) -> None:
         return None
@@ -45,7 +47,16 @@ class AnalyticsAgent(AgentBase):
         return None
 
     async def execute(self, task: dict[str, Any]) -> dict[str, Any]:
-        task_type = task.get("type", "kpis")
+        task_type = task.get("type", "summary")
+
+        if task_type in {"analytics_task", "summary"}:
+            business_metrics = self.dashboard.get_kpis()
+            report = self.reporter.generate_daily_report(business_metrics)
+            return {
+                "business_metrics": business_metrics,
+                "anomalies": await self._detect_anomalies(),
+                "report_generated": report["type"] == "daily",
+            }
 
         if task_type == "record_metric":
             self.predictor.record(task["metric"], task["value"])
@@ -71,3 +82,28 @@ class AnalyticsAgent(AgentBase):
 
         self.tasks_failed += 1
         return {"status": "unknown_task", "task_type": task_type}
+
+    def record_metrics(self, cpu_percent: float, ram_percent: float) -> None:
+        self._cpu_history.append(cpu_percent)
+        self._ram_history.append(ram_percent)
+        self.predictor.record("cpu", cpu_percent)
+        self.predictor.record("ram", ram_percent)
+
+    async def _detect_anomalies(self) -> list[dict[str, Any]]:
+        anomalies: list[dict[str, Any]] = []
+        for resource_name, history in (
+            ("cpu", self._cpu_history),
+            ("ram", self._ram_history),
+        ):
+            if len(history) < self.predictor.window_size:
+                continue
+            is_anomaly, z_score = self.predictor.is_anomaly(resource_name, history[-1])
+            if is_anomaly:
+                anomalies.append(
+                    {
+                        "resource": resource_name,
+                        "value": history[-1],
+                        "z_score": z_score,
+                    }
+                )
+        return anomalies

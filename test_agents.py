@@ -1,28 +1,66 @@
 """Tests for ECO-IA agents."""
 
+import asyncio
 import os
 import sys
+from unittest.mock import AsyncMock, patch
 
 # Ensure project root is on the path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pytest
 
+from agents.analytics import AnalyticsAgent
 from agents.analytics.dashboard import DashboardData
 from agents.analytics.predictor import Predictor
 from agents.analytics.reporter import Reporter
+from agents.devops import DevOpsAgent
 from agents.devops.backup import BackupManager
+from agents.monetization import MonetizationAgent
 from agents.monetization.billing import BillingManager
 from agents.monetization.clients import ClientManager
 from agents.monetization.pricing import PricingEngine
+from agents.resources import ResourcesAgent
 from agents.resources.optimizer import ResourceOptimizer
+from agents.security import SecurityAgent
 from agents.security.firewall import FirewallManager
 from agents.security.intrusion_detector import IntrusionDetector
 from core.agent_manager import AgentManager
 from core.communication import Message, MessageBus
 from core.llm_connector import LLMConnector
 from core.scheduler import TaskScheduler
-from orchestrator import OrchestratorAgent
+from orchestrator import (
+    MasterOrchestrator,
+    OrchestratorAgent,
+    bytes_to_human,
+    iso_now,
+    safe_json,
+)
+
+
+@pytest.fixture
+def resources_agent():
+    return ResourcesAgent()
+
+
+@pytest.fixture
+def security_agent():
+    return SecurityAgent()
+
+
+@pytest.fixture
+def analytics_agent():
+    return AnalyticsAgent()
+
+
+@pytest.fixture
+def monetization_agent():
+    return MonetizationAgent()
+
+
+@pytest.fixture
+def devops_agent():
+    return DevOpsAgent()
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Core – MessageBus
@@ -473,3 +511,169 @@ class TestReporter:
         self.reporter.generate_daily_report({})
         reports = self.reporter.get_reports()
         assert len(reports) >= 1
+
+
+class TestResourcesAgent:
+    @pytest.mark.asyncio
+    async def test_health_check(self, resources_agent):
+        assert await resources_agent.health_check() is True
+
+    @pytest.mark.asyncio
+    async def test_execute_returns_dict(self, resources_agent):
+        result = await resources_agent.execute({})
+        assert "metrics" in result
+        assert "alerts" in result
+        assert "cleanup" in result
+
+
+class TestSecurityAgent:
+    @pytest.mark.asyncio
+    async def test_health_check(self, security_agent):
+        assert await security_agent.health_check() is True
+
+    @pytest.mark.asyncio
+    async def test_scan_no_auth_log(self, security_agent, tmp_path):
+        security_agent.detector.auth_log_path = str(tmp_path / "auth.log")
+        with patch.object(security_agent, "_scan_journalctl", new_callable=AsyncMock) as mock_scan:
+            mock_scan.return_value = {"suspicious_lines": 0, "source": "journalctl"}
+            result = await security_agent._scan_auth_logs()
+        assert isinstance(result, dict)
+
+    def test_initial_state(self, security_agent):
+        assert len(security_agent._blocked_ips) == 0
+        assert len(security_agent._failed_attempts) == 0
+
+    @pytest.mark.asyncio
+    async def test_execute_returns_dict(self, security_agent):
+        with patch.object(security_agent, "_scan_auth_logs", new_callable=AsyncMock) as scan_logs:
+            scan_logs.return_value = {"suspicious_ips": 0, "newly_blocked": []}
+            with patch.object(security_agent, "_run_audit", new_callable=AsyncMock) as run_audit:
+                run_audit.return_value = {"open_ports": 3}
+                result = await security_agent.execute({})
+        assert "log_scan" in result
+        assert "blocked" in result
+        assert "audit" in result
+
+
+class TestAnalyticsAgent:
+    @pytest.mark.asyncio
+    async def test_health_check(self, analytics_agent):
+        assert await analytics_agent.health_check() is True
+
+    def test_record_metrics(self, analytics_agent):
+        analytics_agent.record_metrics(50.0, 60.0)
+        assert len(analytics_agent._cpu_history) == 1
+        assert len(analytics_agent._ram_history) == 1
+
+    def test_no_anomaly_with_short_history(self, analytics_agent):
+        for _ in range(5):
+            analytics_agent.record_metrics(50.0, 60.0)
+        result = asyncio.get_event_loop().run_until_complete(analytics_agent._detect_anomalies())
+        assert result == []
+
+    def test_anomaly_detection(self, analytics_agent):
+        for _ in range(20):
+            analytics_agent.record_metrics(50.0, 60.0)
+        analytics_agent.record_metrics(200.0, 60.0)
+
+        result = asyncio.get_event_loop().run_until_complete(analytics_agent._detect_anomalies())
+        assert any(anomaly["resource"] == "cpu" for anomaly in result)
+
+    @pytest.mark.asyncio
+    async def test_execute_returns_dict(self, analytics_agent):
+        result = await analytics_agent.execute({})
+        assert "business_metrics" in result
+        assert "anomalies" in result
+        assert "report_generated" in result
+
+
+class TestMonetizationAgent:
+    @pytest.mark.asyncio
+    async def test_health_check(self, monetization_agent):
+        assert await monetization_agent.health_check() is True
+
+    @pytest.mark.asyncio
+    async def test_dynamic_pricing_returns_multiplier(self, monetization_agent):
+        result = await monetization_agent._update_dynamic_pricing()
+        assert "multiplier" in result
+        assert isinstance(result["multiplier"], float)
+
+    @pytest.mark.asyncio
+    async def test_create_invoice(self, monetization_agent):
+        result = await monetization_agent.create_invoice("cust_123", 99.0, "Test service")
+        assert result["status"] == "created"
+        assert result["customer_id"] == "cust_123"
+
+    @pytest.mark.asyncio
+    async def test_execute_returns_dict(self, monetization_agent):
+        result = await monetization_agent.execute({})
+        assert "overdue_invoices" in result
+        assert "dynamic_pricing" in result
+        assert "revenue_summary" in result
+
+
+class TestDevOpsAgent:
+    @pytest.mark.asyncio
+    async def test_execute_returns_dict(self, devops_agent):
+        with patch.object(devops_agent, "_check_services_health", new_callable=AsyncMock) as check_health:
+            check_health.return_value = {"services": {}, "total": 0}
+            with patch.object(devops_agent, "_auto_heal_failed_services", new_callable=AsyncMock) as auto_heal:
+                auto_heal.return_value = {"restarted": []}
+                with patch.object(devops_agent, "_run_backup_if_due", new_callable=AsyncMock) as backup:
+                    backup.return_value = {"status": "script_not_found"}
+                    with patch.object(devops_agent, "_cleanup_docker", new_callable=AsyncMock) as cleanup:
+                        cleanup.return_value = {"status": "ok"}
+                        result = await devops_agent.execute({})
+        assert "health" in result
+        assert "auto_heal" in result
+        assert "backup" in result
+
+
+class TestMasterOrchestrator:
+    def test_orchestrator_has_all_agents(self):
+        orch = MasterOrchestrator()
+        assert hasattr(orch, "security")
+        assert hasattr(orch, "resources")
+        assert hasattr(orch, "devops")
+        assert hasattr(orch, "monetization")
+        assert hasattr(orch, "analytics")
+
+    def test_status_structure(self):
+        orch = MasterOrchestrator()
+        status = orch.status()
+        assert "orchestrator_running" in status
+        assert "agents" in status
+        assert len(status["agents"]) == 5
+
+    @pytest.mark.asyncio
+    async def test_start_and_stop(self):
+        orch = MasterOrchestrator(cycle_seconds=999)
+        await orch.start()
+        assert orch.is_running is True
+        await orch.stop()
+        assert orch.is_running is False
+
+
+class TestHelpers:
+    def test_bytes_to_human(self):
+        assert "1.0 KiB" in bytes_to_human(1024)
+        assert "1.0 MiB" in bytes_to_human(1024 ** 2)
+        assert "1.0 GiB" in bytes_to_human(1024 ** 3)
+
+    def test_iso_now_is_string(self):
+        ts = iso_now()
+        assert isinstance(ts, str)
+        assert "T" in ts
+
+    def test_safe_json_dict(self):
+        import json
+
+        result = safe_json({"key": "value"})
+        parsed = json.loads(result)
+        assert parsed["key"] == "value"
+
+    def test_safe_json_non_serializable(self):
+        import datetime
+
+        result = safe_json({"date": datetime.datetime.utcnow()})
+        assert isinstance(result, str)

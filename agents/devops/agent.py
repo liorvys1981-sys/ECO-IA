@@ -53,9 +53,10 @@ class DevOpsAgent(AgentBase):
 
         if task_type == "status":
             return {
-                "services": self.deployer.get_service_status(),
-                "healer": self.auto_healer.get_history(limit=5),
-                "backups": self.backup_manager.list_backups(),
+                "health": await self._check_services_health(),
+                "auto_heal": await self._auto_heal_failed_services(),
+                "backup": await self._run_backup_if_due(),
+                "cleanup": await self._cleanup_docker(),
             }
 
         if task_type == "run_backup":
@@ -72,3 +73,15 @@ class DevOpsAgent(AgentBase):
 
         self.tasks_failed += 1
         return {"status": "unknown_task", "task_type": task_type}
+
+    async def _check_services_health(self) -> dict[str, Any]:
+        return self.deployer.get_service_status()
+
+    async def _auto_heal_failed_services(self) -> dict[str, Any]:
+        return {"restarted": await self.auto_healer.run_once()}
+
+    async def _run_backup_if_due(self) -> dict[str, Any]:
+        return self.backup_manager.run_backup(label="auto")
+
+    async def _cleanup_docker(self) -> dict[str, Any]:
+        return {"status": "skipped"}

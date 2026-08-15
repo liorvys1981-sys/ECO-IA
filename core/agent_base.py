@@ -71,6 +71,9 @@ class AgentBase(ABC):
                 {"type": "health_pong", "agent_name": self.name},
             )
 
+    async def health_check(self) -> bool:
+        return True
+
     async def send_message(self, target: str, content: dict[str, Any]) -> None:
         if not self.message_bus:
             return

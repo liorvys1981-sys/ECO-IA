@@ -108,11 +108,45 @@ class MonetizationAgent(AgentBase):
             return {"status": "processed", "action": "payment_failed", "invoice_id": invoice_id}
 
         if task_type == "summary":
+            overdue_invoices = await self._get_overdue_invoices()
+            dynamic_pricing = await self._update_dynamic_pricing()
             return {
-                "clients": self.client_manager.get_summary(),
-                "pricing": self.pricing_engine.get_pricing_summary(),
-                "billing": self.billing_manager.get_revenue_summary(),
+                "overdue_invoices": overdue_invoices,
+                "dynamic_pricing": dynamic_pricing,
+                "revenue_summary": self.billing_manager.get_revenue_summary(),
             }
 
         self.tasks_failed += 1
         return {"status": "unknown_task", "task_type": task_type}
+
+    async def _update_dynamic_pricing(self) -> dict[str, Any]:
+        active_clients = self.client_manager.get_summary().get("active_clients", 0)
+        multiplier = 1.2 if active_clients > 10 else 1.0
+        self.pricing_engine.set_demand_multiplier(multiplier)
+        return {"multiplier": float(multiplier)}
+
+    async def _get_overdue_invoices(self) -> list[dict[str, Any]]:
+        invoices = await self.billing_manager.list_invoices()
+        return [
+            invoice
+            for invoice in invoices
+            if invoice.get("status") == "overdue"
+            or invoice.get("params", {}).get("status") == "overdue"
+        ]
+
+    async def create_invoice(
+        self,
+        customer_id: str,
+        amount_usd: float,
+        description: str,
+    ) -> dict[str, Any]:
+        invoice = await self.billing_manager.create_invoice(
+            customer_id,
+            int(round(amount_usd * 100)),
+            description,
+        )
+        return {
+            "status": "created",
+            "customer_id": customer_id,
+            "invoice": invoice,
+        }

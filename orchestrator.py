@@ -1,10 +1,16 @@
 """🧠 Orchestrator Agent - Master coordinator for all ECO-IA agents."""
 
+import json
 import logging
 from collections.abc import Awaitable, Callable
 from datetime import datetime
 from typing import Any
 
+from agents.analytics import AnalyticsAgent
+from agents.devops import DevOpsAgent
+from agents.monetization import MonetizationAgent
+from agents.resources import ResourcesAgent
+from agents.security import SecurityAgent
 from core.agent_base import AgentBase
 from core.communication import Message, MessageBus
 from core.llm_connector import LLMConnector
@@ -254,4 +260,51 @@ class OrchestratorAgent(AgentBase):
             "agent": agent_name,
             "task": routed_task.get("type"),
             "result": result,
+        }
+
+
+def bytes_to_human(num_bytes: int) -> str:
+    value = float(num_bytes)
+    for unit in ("B", "KiB", "MiB", "GiB", "TiB"):
+        if value < 1024 or unit == "TiB":
+            return f"{value:.1f} {unit}"
+        value /= 1024
+    return f"{value:.1f} TiB"
+
+
+def iso_now() -> str:
+    return datetime.utcnow().isoformat()
+
+
+def safe_json(payload: Any) -> str:
+    return json.dumps(payload, default=str)
+
+
+class MasterOrchestrator:
+    def __init__(self, cycle_seconds: int = 60) -> None:
+        self.cycle_seconds = cycle_seconds
+        self.message_bus = MessageBus()
+        self.resources = ResourcesAgent(message_bus=self.message_bus)
+        self.security = SecurityAgent(message_bus=self.message_bus)
+        self.devops = DevOpsAgent(message_bus=self.message_bus)
+        self.monetization = MonetizationAgent(message_bus=self.message_bus)
+        self.analytics = AnalyticsAgent(message_bus=self.message_bus)
+        self.is_running = False
+
+    async def start(self) -> None:
+        self.is_running = True
+
+    async def stop(self) -> None:
+        self.is_running = False
+
+    def status(self) -> dict[str, Any]:
+        return {
+            "orchestrator_running": self.is_running,
+            "agents": {
+                "security": self.security.health_status(),
+                "resources": self.resources.health_status(),
+                "devops": self.devops.health_status(),
+                "monetization": self.monetization.health_status(),
+                "analytics": self.analytics.health_status(),
+            },
         }
