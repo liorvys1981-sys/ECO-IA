@@ -568,7 +568,7 @@ class TestAnalyticsAgent:
     def test_no_anomaly_with_short_history(self, analytics_agent):
         for _ in range(5):
             analytics_agent.record_metrics(50.0, 60.0)
-        result = asyncio.get_event_loop().run_until_complete(analytics_agent._detect_anomalies())
+        result = asyncio.run(analytics_agent._detect_anomalies())
         assert result == []
 
     def test_anomaly_detection(self, analytics_agent):
@@ -576,7 +576,7 @@ class TestAnalyticsAgent:
             analytics_agent.record_metrics(50.0, 60.0)
         analytics_agent.record_metrics(200.0, 60.0)
 
-        result = asyncio.get_event_loop().run_until_complete(analytics_agent._detect_anomalies())
+        result = asyncio.run(analytics_agent._detect_anomalies())
         assert any(anomaly["resource"] == "cpu" for anomaly in result)
 
     @pytest.mark.asyncio
@@ -615,13 +615,29 @@ class TestMonetizationAgent:
 class TestDevOpsAgent:
     @pytest.mark.asyncio
     async def test_execute_returns_dict(self, devops_agent):
-        with patch.object(devops_agent, "_check_services_health", new_callable=AsyncMock) as check_health:
+        with patch.object(
+            devops_agent,
+            "_check_services_health",
+            new_callable=AsyncMock,
+        ) as check_health:
             check_health.return_value = {"services": {}, "total": 0}
-            with patch.object(devops_agent, "_auto_heal_failed_services", new_callable=AsyncMock) as auto_heal:
+            with patch.object(
+                devops_agent,
+                "_auto_heal_failed_services",
+                new_callable=AsyncMock,
+            ) as auto_heal:
                 auto_heal.return_value = {"restarted": []}
-                with patch.object(devops_agent, "_run_backup_if_due", new_callable=AsyncMock) as backup:
+                with patch.object(
+                    devops_agent,
+                    "_run_backup_if_due",
+                    new_callable=AsyncMock,
+                ) as backup:
                     backup.return_value = {"status": "script_not_found"}
-                    with patch.object(devops_agent, "_cleanup_docker", new_callable=AsyncMock) as cleanup:
+                    with patch.object(
+                        devops_agent,
+                        "_cleanup_docker",
+                        new_callable=AsyncMock,
+                    ) as cleanup:
                         cleanup.return_value = {"status": "ok"}
                         result = await devops_agent.execute({})
         assert "health" in result

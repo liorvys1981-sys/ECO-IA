@@ -1,7 +1,7 @@
 """ECO-IA SQLAlchemy models."""
-from enum import StrEnum
 import uuid
 from datetime import datetime
+from enum import StrEnum
 
 from database.connection import Base
 from sqlalchemy import Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String, Text
