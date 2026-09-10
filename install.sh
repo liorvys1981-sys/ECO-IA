@@ -2,7 +2,7 @@
 # =============================================================================
 # ECO-IA — Installation Script
 # OVHcloud US b3-8 | Ubuntu 24.04 LTS | 8GB RAM | IP: 135.148.232.10
-# Usage: sudo bash scripts/install.sh
+# Usage: sudo bash scripts/setup.sh
 # =============================================================================
 set -euo pipefail
 
@@ -18,7 +18,7 @@ warn()  { echo -e "${YELLOW}[WARN]${NC}  $*" | tee -a "$LOG_FILE"; }
 error() { echo -e "${RED}[ERROR]${NC} $*" | tee -a "$LOG_FILE"; exit 1; }
 step()  { echo -e "\n${BOLD}${GREEN}▶ $*${NC}" | tee -a "$LOG_FILE"; }
 
-[[ "$EUID" -ne 0 ]] && error "Run as root: sudo bash scripts/install.sh"
+[[ "$EUID" -ne 0 ]] && error "Run as root: sudo bash scripts/setup.sh"
 mkdir -p "$(dirname $LOG_FILE)"; touch "$LOG_FILE"
 
 echo -e "${GREEN}${BOLD}"
@@ -106,9 +106,9 @@ Requires=docker.service
 Type=forking
 User=$ECO_IA_USER
 WorkingDirectory=$ECO_IA_DIR
-ExecStart=/usr/bin/docker compose -f $ECO_IA_DIR/docker/docker-compose.yml up -d
-ExecStop=/usr/bin/docker compose -f $ECO_IA_DIR/docker/docker-compose.yml down
-ExecReload=/usr/bin/docker compose -f $ECO_IA_DIR/docker/docker-compose.yml restart
+ExecStart=/usr/bin/docker compose -f $ECO_IA_DIR/docker-compose.yml up -d
+ExecStop=/usr/bin/docker compose -f $ECO_IA_DIR/docker-compose.yml down
+ExecReload=/usr/bin/docker compose -f $ECO_IA_DIR/docker-compose.yml restart
 Restart=always
 RestartSec=10
 StandardOutput=journal

@@ -84,6 +84,41 @@ Cuando el servidor está bajo alta carga, los precios suben automáticamente:
 
 ---
 
+## Precios IP OVHcloud US
+
+Los precios de infraestructura IP ahora se reflejan para **EE.UU.** en **USD** mediante el catálogo `GE-A8CCF`.
+
+### Cloud
+
+| Producto | Precio mensual |
+|----------|----------------|
+| Floating IPv4 | $3.50 |
+| Floating IPv6 | $1.50 |
+| Primary IPv4 | $0.60 |
+| Primary IPv6 | Gratis |
+
+### Servidores dedicados
+
+| Producto | Precio mensual | Configuración |
+|----------|----------------|---------------|
+| Primary IPv4 | $1.90 | - |
+| Additional single IP | $1.90 | $6.00 |
+| IP subnet /29 | $16.00 | $39.00 |
+| IP subnet /28 | $31.00 | $67.00 |
+| IP subnet /27 | $61.00 | $121.00 |
+| IP subnet /26 | $121.00 | $221.00 |
+| IP subnet /25 | $242.00 | $299.00 |
+| IP subnet /24 | $484.00 | $732.00 |
+
+### API
+
+```bash
+curl http://135.148.232.10:8000/api/v1/services/hosting/ip-pricing \
+  -H "X-API-Key: TU_API_KEY"
+```
+
+---
+
 ## Upselling automático
 
 El agente de monetización detecta oportunidades automáticamente:

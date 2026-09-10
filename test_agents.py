@@ -1,35 +1,66 @@
 """Tests for ECO-IA agents."""
 
 import asyncio
-import sys
 import os
+import sys
+from unittest.mock import AsyncMock, patch
 
 # Ensure project root is on the path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pytest
 
-from core.communication import Message, MessageBus
-from core.scheduler import TaskScheduler
-from core.llm_connector import LLMConnector
-
+from agents.analytics import AnalyticsAgent
+from agents.analytics.dashboard import DashboardData
+from agents.analytics.predictor import Predictor
+from agents.analytics.reporter import Reporter
+from agents.devops import DevOpsAgent
+from agents.devops.backup import BackupManager
+from agents.monetization import MonetizationAgent
 from agents.monetization.billing import BillingManager
 from agents.monetization.clients import ClientManager
 from agents.monetization.pricing import PricingEngine
-
-from agents.devops.backup import BackupManager
-from agents.devops.auto_heal import AutoHealer
-
+from agents.resources import Cleaner, ResourcesAgent
 from agents.resources.optimizer import ResourceOptimizer
-from agents.resources.scaler import AutoScaler
-
+from agents.security import SecurityAgent
 from agents.security.firewall import FirewallManager
 from agents.security.intrusion_detector import IntrusionDetector
+from core.agent_manager import AgentManager
+from core.communication import Message, MessageBus
+from core.llm_connector import LLMConnector
+from core.scheduler import TaskScheduler
+from orchestrator import (
+    MasterOrchestrator,
+    OrchestratorAgent,
+    bytes_to_human,
+    iso_now,
+    safe_json,
+)
 
-from agents.analytics.predictor import Predictor
-from agents.analytics.dashboard import DashboardData
-from agents.analytics.reporter import Reporter
 
+@pytest.fixture
+def resources_agent():
+    return ResourcesAgent()
+
+
+@pytest.fixture
+def security_agent():
+    return SecurityAgent()
+
+
+@pytest.fixture
+def analytics_agent():
+    return AnalyticsAgent()
+
+
+@pytest.fixture
+def monetization_agent():
+    return MonetizationAgent()
+
+
+@pytest.fixture
+def devops_agent():
+    return DevOpsAgent()
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Core – MessageBus
@@ -132,6 +163,78 @@ class TestLLMConnector:
         assert "model" in info
 
 
+class TestAgentManager:
+    @pytest.mark.asyncio
+    async def test_initialize_all_registers_specialists(self):
+        manager = AgentManager()
+        status = await manager.initialize_all()
+        assert status["total"] == 6
+        orchestrator = manager.agents["orchestrator"]
+        registered = orchestrator.execute  # keep reference for type narrowing
+        assert callable(registered)
+        assert "monetization" in orchestrator._agent_registry  # noqa: SLF001
+        await manager.stop_all()
+
+
+class TestOrchestratorRouting:
+    @pytest.mark.asyncio
+    async def test_register_and_list_agents(self):
+        orchestrator = OrchestratorAgent()
+
+        registered = await orchestrator.execute(
+            {
+                "type": "register_agent",
+                "agent_name": "security",
+                "description": "security agent",
+            }
+        )
+        listed = await orchestrator.execute({"type": "list_agents"})
+
+        assert registered == {"status": "registered", "agent": "security"}
+        assert listed["agents"][0]["name"] == "security"
+        assert listed["agents"][0]["description"] == "security agent"
+        assert listed["agents"][0]["status"] == "active"
+
+    @pytest.mark.asyncio
+    async def test_health_report_includes_registered_agents(self):
+        orchestrator = OrchestratorAgent()
+        await orchestrator.execute(
+            {
+                "type": "register_agent",
+                "agent_name": "analytics",
+                "description": "analytics agent",
+            }
+        )
+
+        report = await orchestrator.execute({"type": "health_report"})
+
+        assert report["orchestrator"]["name"] == "orchestrator"
+        assert "analytics" in report["registered_agents"]
+        assert isinstance(report["scheduler_tasks"], list)
+        assert report["recent_decisions"] == []
+
+    @pytest.mark.asyncio
+    async def test_routes_task_to_registered_agent(self):
+        orchestrator = OrchestratorAgent()
+
+        async def fake_execute(task):
+            return {"handled": task["type"]}
+
+        orchestrator._register_agent(  # noqa: SLF001
+            {
+                "agent_name": "monetization",
+                "description": "test agent",
+                "executor": fake_execute,
+                "task_types": ["list_plans"],
+            }
+        )
+
+        result = await orchestrator.execute({"type": "list_plans"})
+        assert result["status"] == "routed"
+        assert result["agent"] == "monetization"
+        assert result["result"]["handled"] == "list_plans"
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Monetization – ClientManager
 # ──────────────────────────────────────────────────────────────────────────────
@@ -202,6 +305,12 @@ class TestPricingEngine:
         assert len(plans) == 3
         plan_keys = {p["plan_key"] for p in plans}
         assert {"basic", "pro", "enterprise"}.issubset(plan_keys)
+
+    def test_get_ovhcloud_us_ip_pricing(self):
+        pricing = self.engine.get_ovhcloud_us_ip_pricing()
+        assert pricing["provider"] == "OVHcloud US"
+        assert pricing["currency"] == "USD"
+        assert pricing["categories"]["dedicated_servers"][0]["monthly_price_usd"] == 1.90
 
     def test_recommend_plan(self):
         plan = self.engine.recommend_plan(monthly_api_calls=5_000, storage_gb=5)
@@ -319,6 +428,30 @@ class TestFirewallManager:
         # UFW will fail but the method should accept the IP format
         result = self.fw.block_ip("192.168.1.100", reason="test")
         assert result["ip"] == "192.168.1.100"
+
+    @pytest.mark.parametrize("ip", ["999.1.1.1", "192.168.1.1/99", "256.0.0.1"])
+    def test_invalid_ipv4_ranges_raise(self, ip):
+        with pytest.raises(ValueError, match="Invalid IP"):
+            self.fw.block_ip(ip)
+
+    def test_missing_ufw_returns_failed_record(self):
+        with patch("firewall.shutil.which", return_value=None):
+            result = self.fw.block_ip("192.168.1.100", reason="test")
+
+        assert result["success"] is False
+        assert self.fw.get_rule_log(limit=1)[0]["action"] == "block"
+
+    def test_allow_and_deny_port_are_logged(self):
+        with patch.object(self.fw, "_ufw", side_effect=[{"returncode": 0}, {"returncode": 0}]):
+            allow_result = self.fw.allow_port(80)
+            deny_result = self.fw.deny_port(80)
+
+        assert allow_result["success"] is True
+        assert deny_result["success"] is True
+        assert [entry["action"] for entry in self.fw.get_rule_log(limit=2)] == [
+            "allow_port",
+            "deny_port",
+        ]
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -444,3 +577,220 @@ class TestReporter:
         self.reporter.generate_daily_report({})
         reports = self.reporter.get_reports()
         assert len(reports) >= 1
+
+
+class TestResourcesAgent:
+    @pytest.mark.asyncio
+    async def test_health_check(self, resources_agent):
+        assert await resources_agent.health_check() is True
+
+    @pytest.mark.asyncio
+    async def test_execute_returns_dict(self, resources_agent):
+        result = await resources_agent.execute({})
+        assert "metrics" in result
+        assert "alerts" in result
+        assert "cleanup" in result
+
+
+class TestCleaner:
+    def test_clean_old_logs_removes_large_logs(self, tmp_path):
+        log_dir = tmp_path / "logs"
+        log_dir.mkdir()
+        large_log = log_dir / "large.log"
+        large_log.write_bytes(b"x" * 2048)
+
+        cleaner = Cleaner(log_dirs=[str(log_dir)], max_log_size_mb=0.001)
+
+        result = cleaner.clean_old_logs()
+
+        assert result["removed_count"] == 1
+        assert not large_log.exists()
+
+    def test_clean_temp_files_removes_file_paths(self, tmp_path):
+        temp_file = tmp_path / "temp.txt"
+        temp_file.write_text("temporary data")
+
+        cleaner = Cleaner(temp_dirs=[str(temp_file)])
+
+        result = cleaner.clean_temp_files()
+
+        assert result["cleaned_dirs"] == [str(temp_file)]
+        assert not temp_file.exists()
+
+    def test_clean_docker_artefacts_handles_missing_docker(self):
+        cleaner = Cleaner()
+
+        with patch("cleaner.shutil.which", return_value=None):
+            result = cleaner.clean_docker_artefacts()
+
+        assert all(item["success"] is False for item in result["results"])
+        assert all(item["output"] == "docker executable not found" for item in result["results"])
+
+
+class TestSecurityAgent:
+    @pytest.mark.asyncio
+    async def test_health_check(self, security_agent):
+        assert await security_agent.health_check() is True
+
+    @pytest.mark.asyncio
+    async def test_scan_no_auth_log(self, security_agent, tmp_path):
+        security_agent.detector.auth_log_path = str(tmp_path / "auth.log")
+        with patch.object(security_agent, "_scan_journalctl", new_callable=AsyncMock) as mock_scan:
+            mock_scan.return_value = {"suspicious_lines": 0, "source": "journalctl"}
+            result = await security_agent._scan_auth_logs()
+        assert isinstance(result, dict)
+
+    def test_initial_state(self, security_agent):
+        assert len(security_agent._blocked_ips) == 0
+        assert len(security_agent._failed_attempts) == 0
+
+    @pytest.mark.asyncio
+    async def test_execute_returns_dict(self, security_agent):
+        with patch.object(security_agent, "_scan_auth_logs", new_callable=AsyncMock) as scan_logs:
+            scan_logs.return_value = {"suspicious_ips": 0, "newly_blocked": []}
+            with patch.object(security_agent, "_run_audit", new_callable=AsyncMock) as run_audit:
+                run_audit.return_value = {"open_ports": 3}
+                result = await security_agent.execute({})
+        assert "log_scan" in result
+        assert "blocked" in result
+        assert "audit" in result
+
+
+class TestAnalyticsAgent:
+    @pytest.mark.asyncio
+    async def test_health_check(self, analytics_agent):
+        assert await analytics_agent.health_check() is True
+
+    def test_record_metrics(self, analytics_agent):
+        analytics_agent.record_metrics(50.0, 60.0)
+        assert len(analytics_agent._cpu_history) == 1
+        assert len(analytics_agent._ram_history) == 1
+
+    def test_no_anomaly_with_short_history(self, analytics_agent):
+        for _ in range(5):
+            analytics_agent.record_metrics(50.0, 60.0)
+        result = asyncio.run(analytics_agent._detect_anomalies())
+        assert result == []
+
+    def test_anomaly_detection(self, analytics_agent):
+        for _ in range(20):
+            analytics_agent.record_metrics(50.0, 60.0)
+        analytics_agent.record_metrics(200.0, 60.0)
+
+        result = asyncio.run(analytics_agent._detect_anomalies())
+        assert any(anomaly["resource"] == "cpu" for anomaly in result)
+
+    @pytest.mark.asyncio
+    async def test_execute_returns_dict(self, analytics_agent):
+        result = await analytics_agent.execute({})
+        assert "business_metrics" in result
+        assert "anomalies" in result
+        assert "report_generated" in result
+
+
+class TestMonetizationAgent:
+    @pytest.mark.asyncio
+    async def test_health_check(self, monetization_agent):
+        assert await monetization_agent.health_check() is True
+
+    @pytest.mark.asyncio
+    async def test_dynamic_pricing_returns_multiplier(self, monetization_agent):
+        result = await monetization_agent._update_dynamic_pricing()
+        assert "multiplier" in result
+        assert isinstance(result["multiplier"], float)
+
+    @pytest.mark.asyncio
+    async def test_create_invoice(self, monetization_agent):
+        result = await monetization_agent.create_invoice("cust_123", 99.0, "Test service")
+        assert result["status"] == "created"
+        assert result["customer_id"] == "cust_123"
+
+    @pytest.mark.asyncio
+    async def test_execute_returns_dict(self, monetization_agent):
+        result = await monetization_agent.execute({})
+        assert "overdue_invoices" in result
+        assert "dynamic_pricing" in result
+        assert "revenue_summary" in result
+
+
+class TestDevOpsAgent:
+    @pytest.mark.asyncio
+    async def test_execute_returns_dict(self, devops_agent):
+        with patch.object(
+            devops_agent,
+            "_check_services_health",
+            new_callable=AsyncMock,
+        ) as check_health:
+            check_health.return_value = {"services": {}, "total": 0}
+            with patch.object(
+                devops_agent,
+                "_auto_heal_failed_services",
+                new_callable=AsyncMock,
+            ) as auto_heal:
+                auto_heal.return_value = {"restarted": []}
+                with patch.object(
+                    devops_agent,
+                    "_run_backup_if_due",
+                    new_callable=AsyncMock,
+                ) as backup:
+                    backup.return_value = {"status": "script_not_found"}
+                    with patch.object(
+                        devops_agent,
+                        "_cleanup_docker",
+                        new_callable=AsyncMock,
+                    ) as cleanup:
+                        cleanup.return_value = {"status": "ok"}
+                        result = await devops_agent.execute({})
+        assert "health" in result
+        assert "auto_heal" in result
+        assert "backup" in result
+
+
+class TestMasterOrchestrator:
+    def test_orchestrator_has_all_agents(self):
+        orch = MasterOrchestrator()
+        assert hasattr(orch, "security")
+        assert hasattr(orch, "resources")
+        assert hasattr(orch, "devops")
+        assert hasattr(orch, "monetization")
+        assert hasattr(orch, "analytics")
+
+    def test_status_structure(self):
+        orch = MasterOrchestrator()
+        status = orch.status()
+        assert "orchestrator_running" in status
+        assert "agents" in status
+        assert len(status["agents"]) == 5
+
+    @pytest.mark.asyncio
+    async def test_start_and_stop(self):
+        orch = MasterOrchestrator(cycle_seconds=999)
+        await orch.start()
+        assert orch.is_running is True
+        await orch.stop()
+        assert orch.is_running is False
+
+
+class TestHelpers:
+    def test_bytes_to_human(self):
+        assert "1.0 KiB" in bytes_to_human(1024)
+        assert "1.0 MiB" in bytes_to_human(1024 ** 2)
+        assert "1.0 GiB" in bytes_to_human(1024 ** 3)
+
+    def test_iso_now_is_string(self):
+        ts = iso_now()
+        assert isinstance(ts, str)
+        assert "T" in ts
+
+    def test_safe_json_dict(self):
+        import json
+
+        result = safe_json({"key": "value"})
+        parsed = json.loads(result)
+        assert parsed["key"] == "value"
+
+    def test_safe_json_non_serializable(self):
+        import datetime
+
+        result = safe_json({"date": datetime.datetime.now(datetime.UTC)})
+        assert isinstance(result, str)

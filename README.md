@@ -1,130 +1,192 @@
-# 🌱 ECO-IA — Autonomous AI-Agent Server System
+# 🌱 ECO-IA
 
-> Servidor **99.9% autónomo** con 6 Agentes IA que **se autoabastece**, **genera ingresos** y es **sostenible**.
-> Deployado en **OVHcloud US b3-8** | IP: `135.148.232.10` | Ubuntu 24.04
+Sistema base para un servidor **99.9% autónomo** basado en agentes IA, orientado a auto-operación, monetización y sostenibilidad.
 
-[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green.svg)](https://fastapi.tiangolo.com/)
-[![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)](https://www.docker.com/)
-[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)]()
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+## Arquitectura
 
----
+ECO-IA está organizado alrededor de 6 agentes:
 
-## 🎯 ¿Qué es ECO-IA?
+- 🧠 **Orquestador**: coordina agentes, prioridades y decisiones.
+- 💰 **Monetización**: clientes, pricing dinámico y Stripe.
+- 🔧 **DevOps**: deployments, auto-healing y backups.
+- 🌿 **Recursos**: CPU/RAM/disco, limpieza y auto-scaling.
+- 🛡️ **Seguridad**: firewall, auditoría y detección de amenazas.
+- 📊 **Analytics**: reportes, KPIs y predicción de anomalías.
 
-Sistema multi-agente de IA que trabaja 24/7 para:
+La base actual mantiene la implementación existente y además expone la estructura solicitada en `src/`, `config/`, `scripts/`, `monitoring/` y `tests/`.
 
-1. 🔧 **Autoabastecerse** — monitoreo, auto-recuperación, backups
-2. 💰 **Generar ingresos** — API de IA + hosting cobrado con Stripe
-3. 🌿 **Ser sostenible** — optimización de recursos, escalado automático
+## Estructura
 
----
-
-## 🏗️ Los 6 Agentes
-
-| Agente | Función |
-|--------|---------|
-| 🧠 **Orquestador** | Coordina todo, usa LLM para decisiones, reportes ejecutivos |
-| 💰 **Monetización** | Clientes, facturación Stripe, pricing dinámico |
-| 🔧 **DevOps** | Deploy automático, auto-healing, backups |
-| 🌿 **Recursos** | Optimiza CPU/RAM, limpieza, auto-scaling |
-| 🛡️ **Seguridad** | Firewall UFW, detección de intrusiones, auditorías |
-| 📊 **Analytics** | Reportes diarios, predicción de anomalías |
-
----
-
-## 🚀 Deploy (1 comando)
-
-```bash
-# En ubuntu@ecoia — OVHcloud US
-git clone https://github.com/liorvys1981-sys/ECO-IA.git /opt/eco-ia
-sudo bash /opt/eco-ia/scripts/install.sh
-```
-
-### Post-instalación:
-
-```bash
-nano /opt/eco-ia/.env          # 1. Agregar API keys
-systemctl start eco-ia         # 2. Arrancar contenedores
-bash /opt/eco-ia/scripts/health_check.sh  # 3. Verificar
-```
-
----
-
-## 🌐 Endpoints
-
-| Servicio | URL |
-|----------|-----|
-| **API** | http://135.148.232.10:8000 |
-| **API Docs** | http://135.148.232.10:8000/docs |
-| **Grafana** | http://135.148.232.10:3000 |
-| **Prometheus** | http://135.148.232.10:9090 |
-
----
-
-## 📂 Estructura
-
-```
+```text
 ECO-IA/
-├── agents/
-│   ├── orchestrator/    # 🧠 OrchestratorAgent
-│   ├── monetization/    # 💰 BillingManager, ClientManager, PricingEngine
-│   ├── devops/          # 🔧 AutoHealer, BackupManager, Deployer
-│   ├── resources/       # 🌿 ResourceOptimizer, AutoScaler, Cleaner
-│   ├── security/        # 🛡️ SecurityAuditor, FirewallManager, IntrusionDetector
-│   └── analytics/       # 📊 DashboardData, Predictor, Reporter
-├── core/                # MessageBus, TaskScheduler, LLMConnector, AgentBase
-├── api/                 # FastAPI + middleware + routes
-├── config/              # settings.py, agents.yaml, nginx.conf
-├── docker/              # Dockerfile + docker-compose.yml
-├── monitoring/          # Prometheus + AlertManager
-├── scripts/             # install.sh, health_check.sh, backup.sh
-├── tests/               # test_agents.py + test_api.py
-├── .env.example         # Template OVHcloud
-└── requirements.txt
+├── README.md
+├── docker-compose.yml
+├── Dockerfile
+├── requirements.txt
+├── .env.example
+├── config/
+│   ├── __init__.py
+│   ├── settings.py
+│   ├── agents_config.yaml
+│   └── nginx.conf
+├── src/
+│   ├── __init__.py
+│   ├── main.py
+│   ├── orchestrator/
+│   │   ├── __init__.py
+│   │   └── master_agent.py
+│   ├── agents/
+│   │   ├── __init__.py
+│   │   ├── base_agent.py
+│   │   ├── monetization_agent.py
+│   │   ├── devops_agent.py
+│   │   ├── resources_agent.py
+│   │   ├── security_agent.py
+│   │   └── analytics_agent.py
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── api/
+│   │   │   ├── __init__.py
+│   │   │   └── routes.py
+│   │   ├── payments/
+│   │   │   ├── __init__.py
+│   │   │   └── stripe_service.py
+│   │   └── database/
+│   │       ├── __init__.py
+│   │       └── models.py
+│   ├── tools/
+│   │   ├── __init__.py
+│   │   ├── server_tools.py
+│   │   ├── monitoring_tools.py
+│   │   └── notification_tools.py
+│   └── utils/
+│       ├── __init__.py
+│       ├── logger.py
+│       └── helpers.py
+├── scripts/
+│   ├── setup.sh
+│   ├── start.sh
+│   ├── backup.sh
+│   ├── health_check.sh
+│   └── setup_firewall.sh
+├── monitoring/
+│   ├── prometheus.yml
+│   ├── alertmanager/
+│   │   └── config.yml
+│   └── grafana/
+│       └── dashboards/
+│           └── overview.json
+└── tests/
+    ├── __init__.py
+    └── test_agents.py
 ```
 
----
+## Stack tecnológico
 
-## 🐳 Docker
+- Python 3.11+
+- FastAPI
+- LangChain
+- PostgreSQL
+- Redis
+- Docker + Docker Compose
+- Prometheus + Grafana
+- Stripe
+
+## Requisitos previos
+
+- Python 3.11 o superior
+- Docker y Docker Compose
+- Redis
+- PostgreSQL
+- Credenciales válidas para OpenAI/Ollama y Stripe si se quieren activar esas integraciones
+
+## Instalación
+
+1. Clona el repositorio.
+2. Copia variables de entorno:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+3. Instala dependencias Python:
+
+   ```bash
+   pip install -r requirements.txt
+   pip install ruff
+   ```
+
+4. Ajusta `.env` con tus credenciales y endpoints.
+5. Levanta la plataforma:
+
+   ```bash
+   bash scripts/start.sh
+   ```
+
+Para aprovisionamiento completo del servidor:
 
 ```bash
-# Arrancar todo
-docker compose -f docker/docker-compose.yml up -d
-
-# Estado
-docker compose -f docker/docker-compose.yml ps
-
-# Logs
-docker compose -f docker/docker-compose.yml logs -f eco-ia-api
-
-# Parar
-docker compose -f docker/docker-compose.yml down
+sudo bash scripts/setup.sh
 ```
 
----
+## Variables de entorno
 
-## 🧪 Tests
+Las principales variables viven en `.env.example`:
+
+- `DATABASE_URL`
+- `REDIS_URL`
+- `OPENAI_API_KEY`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `SMTP_*`
+- `PROMETHEUS_PORT`
+- `GRAFANA_PORT`
+
+## Ejecución
+
+- API principal: `python -m uvicorn api.main:app --reload`
+- Entrada compatible solicitada: `python -m uvicorn src.main:app --reload`
+- Docker Compose: `docker compose up -d`
+
+Swagger/OpenAPI queda disponible en `/docs`.
+
+## API disponible
+
+Endpoints principales:
+
+- `GET /`
+- `GET /health`
+- `GET /api/v1/services/hosting/plans`
+- `GET /api/v1/services/hosting/ip-pricing`
+- `GET /api/v1/services/hosting/status`
+- `POST /api/v1/services/data/process`
+
+## Comunicación entre agentes
+
+La implementación existente usa `MessageBus` para coordinación interna y Redis sigue formando parte del stack operativo para cola/mensajería del sistema.
+
+## Logging centralizado
+
+- Configuración base en `src/utils/logger.py`
+- Logs operativos en agentes, API y tareas programadas
+
+## Scripts
+
+- `scripts/setup.sh`: aprovisionamiento inicial
+- `scripts/start.sh`: inicio del stack
+- `scripts/backup.sh`: ejecución de backup
+- `scripts/health_check.sh`: chequeo rápido de salud
+
+## Tests
 
 ```bash
-pip install -r requirements.txt
-pytest tests/ -v --cov=.
+python -m pytest
+python -m ruff check .
 ```
 
----
+## Contribución
 
-## 🖥️ Servidor
-
-- **Provider:** OVHcloud US
-- **Modelo:** b3-8 (8GB RAM, 3 vCores, 48GB SSD)
-- **OS:** Ubuntu 24.04 LTS
-- **IP:** 135.148.232.10
-- **Región:** Virginia (US-EAST-VA-1)
-- **SSH Key:** caco_eco_ia
-
----
-
-## 📄 Licencia
-
-MIT — libre para uso personal y comercial.
+1. Crea una rama de trabajo.
+2. Mantén la estructura anterior al agregar módulos nuevos.
+3. Ejecuta tests y lint antes de enviar cambios.
+4. Documenta cualquier endpoint, agente o variable nueva.

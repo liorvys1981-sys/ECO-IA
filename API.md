@@ -112,6 +112,33 @@ curl http://135.148.232.10:8000/api/v1/services/hosting/plans \
 
 ---
 
+### GET /api/v1/services/hosting/ip-pricing
+Catálogo de precios IP de OVHcloud US en USD.
+
+```bash
+curl http://135.148.232.10:8000/api/v1/services/hosting/ip-pricing \
+  -H "X-API-Key: TU_KEY"
+```
+
+**Respuesta:**
+```json
+{
+  "provider": "OVHcloud US",
+  "region": "US",
+  "currency": "USD",
+  "prices_include_tax": false,
+  "catalog_id": "GE-A8CCF",
+  "categories": {
+    "cloud": [
+      {"product": "Floating IPv4", "monthly_price_usd": 3.5},
+      {"product": "Floating IPv6", "monthly_price_usd": 1.5}
+    ]
+  }
+}
+```
+
+---
+
 ### GET /api/v1/services/hosting/status
 Estado del servicio de hosting.
 

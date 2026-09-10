@@ -13,4 +13,4 @@ COPY . .
 RUN useradd -m -u 1000 ecouser && chown -R ecouser:ecouser /app
 USER ecouser
 
-CMD ["python", "-m", "celery", "-A", "core.celery_app", "worker", "--loglevel=info"]
+CMD ["python", "-m", "celery", "-A", "celery_app.app", "worker", "--loglevel=info"]

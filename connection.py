@@ -1,13 +1,14 @@
 """Database connection and session management."""
 import os
+from collections.abc import Generator
+
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from typing import Generator
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://eco_ia:eco_ia_password@localhost:5432/eco_ia"
+    "******localhost:5432/eco_ia",
 )
 
 engine = create_engine(
@@ -20,6 +21,7 @@ engine = create_engine(
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
 
 def get_db() -> Generator:
     """FastAPI dependency — yields a DB session."""

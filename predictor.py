@@ -3,8 +3,7 @@
 import logging
 import statistics
 from collections import deque
-from typing import Any, Deque, Dict, List, Optional, Tuple
-
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -15,8 +14,8 @@ class Predictor:
     def __init__(self, window_size: int = 20, z_score_threshold: float = 2.5) -> None:
         self.window_size = window_size
         self.z_score_threshold = z_score_threshold
-        self._series: Dict[str, Deque[float]] = {}
-        self._predictions: List[Dict[str, Any]] = []
+        self._series: dict[str, deque[float]] = {}
+        self._predictions: list[dict[str, Any]] = []
 
     # ------------------------------------------------------------------
     # Data ingestion
@@ -32,7 +31,7 @@ class Predictor:
     # Anomaly detection
     # ------------------------------------------------------------------
 
-    def is_anomaly(self, metric: str, value: float) -> Tuple[bool, Optional[float]]:
+    def is_anomaly(self, metric: str, value: float) -> tuple[bool, float | None]:
         """Return (is_anomaly, z_score) for the given value."""
         series = list(self._series.get(metric, []))
         if len(series) < 3:
@@ -49,7 +48,7 @@ class Predictor:
         z_score = abs(value - mean) / std
         return z_score > self.z_score_threshold, round(z_score, 3)
 
-    def predict_next(self, metric: str) -> Optional[float]:
+    def predict_next(self, metric: str) -> float | None:
         """Naïve linear extrapolation of the next value."""
         series = list(self._series.get(metric, []))
         if len(series) < 2:
@@ -65,7 +64,7 @@ class Predictor:
         slope = numerator / denominator
         return round(y_mean + slope, 4)
 
-    def check_and_alert(self, metric: str, value: float) -> Optional[Dict[str, Any]]:
+    def check_and_alert(self, metric: str, value: float) -> dict[str, Any] | None:
         """Record a value and return an alert dict if it is anomalous."""
         self.record(metric, value)
         anomaly, z_score = self.is_anomaly(metric, value)
@@ -82,10 +81,10 @@ class Predictor:
         logger.warning("Anomaly detected in '%s': value=%.3f z=%.3f", metric, value, z_score or 0)
         return alert
 
-    def get_predictions(self, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_predictions(self, limit: int = 50) -> list[dict[str, Any]]:
         return self._predictions[-limit:]
 
-    def get_series_stats(self, metric: str) -> Dict[str, Any]:
+    def get_series_stats(self, metric: str) -> dict[str, Any]:
         series = list(self._series.get(metric, []))
         if not series:
             return {"metric": metric, "count": 0}

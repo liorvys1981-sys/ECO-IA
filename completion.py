@@ -2,7 +2,8 @@
 import logging
 import os
 import time
-from typing import Any, Dict, Optional
+from typing import Any
+
 from core.llm_connector import LLMConnector
 
 logger = logging.getLogger(__name__)
@@ -30,11 +31,11 @@ class AICompletionService:
     async def complete(
         self,
         prompt: str,
-        model: Optional[str] = None,
+        model: str | None = None,
         max_tokens: int = 512,
         temperature: float = 0.7,
-        client_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        client_id: str | None = None,
+    ) -> dict[str, Any]:
         """Run a completion and return result with usage stats."""
         model = model or self._model
         start = time.monotonic()
@@ -70,7 +71,7 @@ class AICompletionService:
             "client_id": client_id,
         }
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         return {
             "total_requests": self._request_count,
             "total_tokens": self._total_tokens,
@@ -78,7 +79,7 @@ class AICompletionService:
         }
 
 # Singleton
-_service: Optional[AICompletionService] = None
+_service: AICompletionService | None = None
 
 def get_completion_service() -> AICompletionService:
     global _service

@@ -3,10 +3,9 @@
 import logging
 import re
 from collections import Counter
-from datetime import datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -29,14 +28,14 @@ class IntrusionDetector:
         self.auth_log_path = auth_log_path
         self.threshold_minutes = threshold_minutes
         self.brute_force_threshold = brute_force_threshold
-        self._alerts: List[Dict[str, Any]] = []
-        self._blocked_ips: List[str] = []
+        self._alerts: list[dict[str, Any]] = []
+        self._blocked_ips: list[str] = []
 
     # ------------------------------------------------------------------
     # Log analysis
     # ------------------------------------------------------------------
 
-    def analyse_auth_log(self) -> List[Dict[str, Any]]:
+    def analyse_auth_log(self) -> list[dict[str, Any]]:
         """Parse auth.log and return detected threats."""
         threats = []
         log_path = Path(self.auth_log_path)
@@ -62,7 +61,7 @@ class IntrusionDetector:
                     "type": "brute_force",
                     "ip": ip,
                     "failed_attempts": count,
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "severity": "high" if count >= self.brute_force_threshold * 2 else "medium",
                 }
                 threats.append(threat)
@@ -75,17 +74,17 @@ class IntrusionDetector:
     # Threat management
     # ------------------------------------------------------------------
 
-    def get_suspicious_ips(self) -> List[str]:
+    def get_suspicious_ips(self) -> list[str]:
         """Return IPs that triggered alerts."""
         return list({a["ip"] for a in self._alerts if "ip" in a})
 
-    def get_alerts(self, severity: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_alerts(self, severity: str | None = None, limit: int = 50) -> list[dict[str, Any]]:
         alerts = self._alerts
         if severity:
             alerts = [a for a in alerts if a.get("severity") == severity]
         return alerts[-limit:]
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         return {
             "total_alerts": len(self._alerts),
             "high_severity": sum(1 for a in self._alerts if a.get("severity") == "high"),

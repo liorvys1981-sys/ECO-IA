@@ -14,12 +14,21 @@ BACKUP_NAME="eco-ia-backup-$TIMESTAMP"
 REMOTE_PATH="${HETZNER_STORAGE_BOX_USER:-}@${HETZNER_STORAGE_BOX_HOST:-}:/backups/eco-ia"
 RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-30}"
 LOCAL_BACKUP_DIR="${LOCAL_BACKUP_DIR:-}"
+CLEANUP_TMPDIR=0
+
+cleanup_tmpdir() {
+    if [[ "$CLEANUP_TMPDIR" -eq 1 && -n "${LOCAL_BACKUP_DIR:-}" ]]; then
+        rm -rf "$LOCAL_BACKUP_DIR"
+    fi
+}
+
+trap cleanup_tmpdir EXIT
+
 if [[ -z "$LOCAL_BACKUP_DIR" ]]; then
     LOCAL_BACKUP_DIR=$(mktemp -d -t eco-ia-backups-XXXXXX)
     CLEANUP_TMPDIR=1
 else
     mkdir -p "$LOCAL_BACKUP_DIR"
-    CLEANUP_TMPDIR=0
 fi
 
 echo "[$TIMESTAMP] Starting ECO-IA backup…"
@@ -59,8 +68,3 @@ find "$LOCAL_BACKUP_DIR" -name "eco-ia-backup-*" -mtime "+$RETENTION_DAYS" -dele
 echo "✅ Cleanup complete."
 
 echo "[$TIMESTAMP] Backup finished: $BACKUP_NAME"
-
-# ── 5. Clean up temporary directory if created by mktemp ──────────────────────
-if [[ "$CLEANUP_TMPDIR" -eq 1 ]]; then
-    rm -rf "$LOCAL_BACKUP_DIR"
-fi

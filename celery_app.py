@@ -1,6 +1,7 @@
 """ECO-IA Celery application — distributed task queue."""
 
 import os
+
 from celery import Celery
 from celery.schedules import crontab
 

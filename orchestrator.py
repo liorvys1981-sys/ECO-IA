@@ -1,15 +1,20 @@
 """🧠 Orchestrator Agent - Master coordinator for all ECO-IA agents."""
 
-import asyncio
+import json
 import logging
-from datetime import datetime
-from typing import Any, Dict, List, Optional
+from collections.abc import Awaitable, Callable
+from datetime import UTC, datetime
+from typing import Any
 
+from agents.analytics import AnalyticsAgent
+from agents.devops import DevOpsAgent
+from agents.monetization import MonetizationAgent
+from agents.resources import ResourcesAgent
+from agents.security import SecurityAgent
 from core.agent_base import AgentBase
 from core.communication import Message, MessageBus
 from core.llm_connector import LLMConnector
 from core.scheduler import TaskScheduler
-
 
 logger = logging.getLogger(__name__)
 
@@ -35,9 +40,9 @@ class OrchestratorAgent(AgentBase):
 
     def __init__(
         self,
-        message_bus: Optional[MessageBus] = None,
-        llm: Optional[LLMConnector] = None,
-        config: Optional[Dict[str, Any]] = None,
+        message_bus: MessageBus | None = None,
+        llm: LLMConnector | None = None,
+        config: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(
             name="orchestrator",
@@ -47,8 +52,14 @@ class OrchestratorAgent(AgentBase):
         )
         self.llm = llm
         self.scheduler = TaskScheduler()
-        self._agent_registry: Dict[str, Dict[str, Any]] = {}
-        self._decisions_log: List[Dict[str, Any]] = []
+        self._agent_registry: dict[str, dict[str, Any]] = {}
+        self._agent_executors: dict[str, Callable[[dict[str, Any]], Awaitable[dict[str, Any]]]] = {}
+        self._task_routes: dict[str, str] = {
+            task_type: agent_name
+            for agent_name, task_types in self.get_config("task_routes", {}).items()
+            for task_type in task_types
+        }
+        self._decisions_log: list[dict[str, Any]] = []
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -76,7 +87,7 @@ class OrchestratorAgent(AgentBase):
     # Task execution
     # ------------------------------------------------------------------
 
-    async def execute(self, task: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute(self, task: dict[str, Any]) -> dict[str, Any]:
         """Route a task to the appropriate agent or handle it directly."""
         task_type = task.get("type", "unknown")
         self._logger.info("Orchestrator received task: %s", task_type)
@@ -90,6 +101,10 @@ class OrchestratorAgent(AgentBase):
         if task_type == "list_agents":
             return {"agents": list(self._agent_registry.values())}
 
+        target_agent = self._resolve_target_agent(task)
+        if target_agent:
+            return await self._route_task(target_agent, task)
+
         # Default: broadcast to all agents
         await self.send_message("*", task)
         return {"status": "broadcasted", "task": task_type}
@@ -98,18 +113,27 @@ class OrchestratorAgent(AgentBase):
     # Agent registry
     # ------------------------------------------------------------------
 
-    def _register_agent(self, task: Dict[str, Any]) -> Dict[str, Any]:
+    def _register_agent(self, task: dict[str, Any]) -> dict[str, Any]:
         agent_name = task.get("agent_name", "unknown")
-        self._agent_registry[agent_name] = {
+        executor = task.get("executor")
+        task_types = list(task.get("task_types", []))
+        if executor:
+            self._agent_executors[agent_name] = executor
+        for task_type in task_types:
+            self._task_routes[task_type] = agent_name
+        agent_record: dict[str, Any] = {
             "name": agent_name,
             "description": task.get("description", ""),
-            "registered_at": datetime.utcnow().isoformat(),
+            "registered_at": datetime.now(UTC).isoformat(),
             "status": "active",
         }
+        if task_types:
+            agent_record["task_types"] = task_types
+        self._agent_registry[agent_name] = agent_record
         self._logger.info("Agent '%s' registered.", agent_name)
         return {"status": "registered", "agent": agent_name}
 
-    def _get_health_report(self) -> Dict[str, Any]:
+    def _get_health_report(self) -> dict[str, Any]:
         return {
             "orchestrator": self.health_status(),
             "registered_agents": self._agent_registry,
@@ -149,7 +173,7 @@ class OrchestratorAgent(AgentBase):
             report = await self.llm.complete(prompt)
             decision = {
                 "type": "executive_report",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "report": report,
             }
             self._decisions_log.append(decision)
@@ -168,7 +192,7 @@ class OrchestratorAgent(AgentBase):
         if msg_type == "health_pong":
             agent_name = content.get("agent_name", message.sender)
             if agent_name in self._agent_registry:
-                self._agent_registry[agent_name]["last_seen"] = datetime.utcnow().isoformat()
+                self._agent_registry[agent_name]["last_seen"] = datetime.now(UTC).isoformat()
                 self._agent_registry[agent_name]["status"] = "active"
 
         elif msg_type == "alert":
@@ -179,7 +203,7 @@ class OrchestratorAgent(AgentBase):
         self._logger.warning("Alert from '%s': %s", message.sender, alert.get("message"))
         decision = {
             "type": "alert_response",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "from_agent": message.sender,
             "alert": alert,
         }
@@ -201,7 +225,7 @@ class OrchestratorAgent(AgentBase):
     # LLM decision
     # ------------------------------------------------------------------
 
-    async def _make_llm_decision(self, task: Dict[str, Any]) -> Dict[str, Any]:
+    async def _make_llm_decision(self, task: dict[str, Any]) -> dict[str, Any]:
         if not self.llm:
             return {"error": "LLM not configured"}
         question = task.get("question", "")
@@ -213,9 +237,77 @@ class OrchestratorAgent(AgentBase):
         )
         decision = {
             "type": "llm_decision",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "question": question,
             "answer": answer,
         }
         self._decisions_log.append(decision)
         return decision
+
+    def _resolve_target_agent(self, task: dict[str, Any]) -> str | None:
+        explicit_target = task.get("target_agent") or task.get("agent")
+        if explicit_target in self._agent_executors:
+            return explicit_target
+        return self._task_routes.get(task.get("type", ""))
+
+    async def _route_task(self, agent_name: str, task: dict[str, Any]) -> dict[str, Any]:
+        executor = self._agent_executors.get(agent_name)
+        if not executor:
+            return {"status": "unavailable", "agent": agent_name}
+
+        routed_task = dict(task)
+        routed_task.setdefault("target_agent", agent_name)
+        result = await executor(routed_task)
+        return {
+            "status": "routed",
+            "agent": agent_name,
+            "task": routed_task.get("type"),
+            "result": result,
+        }
+
+
+def bytes_to_human(num_bytes: int) -> str:
+    value = float(num_bytes)
+    for unit in ("B", "KiB", "MiB", "GiB", "TiB"):
+        if value < 1024 or unit == "TiB":
+            return f"{value:.1f} {unit}"
+        value /= 1024
+    return f"{value:.1f} TiB"
+
+
+def iso_now() -> str:
+    return datetime.now(UTC).isoformat()
+
+
+def safe_json(payload: Any) -> str:
+    return json.dumps(payload, default=str)
+
+
+class MasterOrchestrator:
+    def __init__(self, cycle_seconds: int = 60) -> None:
+        self.cycle_seconds = cycle_seconds
+        self.message_bus = MessageBus()
+        self.resources = ResourcesAgent(message_bus=self.message_bus)
+        self.security = SecurityAgent(message_bus=self.message_bus)
+        self.devops = DevOpsAgent(message_bus=self.message_bus)
+        self.monetization = MonetizationAgent(message_bus=self.message_bus)
+        self.analytics = AnalyticsAgent(message_bus=self.message_bus)
+        self.is_running = False
+
+    async def start(self) -> None:
+        self.is_running = True
+
+    async def stop(self) -> None:
+        self.is_running = False
+
+    def status(self) -> dict[str, Any]:
+        return {
+            "orchestrator_running": self.is_running,
+            "agents": {
+                "security": self.security.health_status(),
+                "resources": self.resources.health_status(),
+                "devops": self.devops.health_status(),
+                "monetization": self.monetization.health_status(),
+                "analytics": self.analytics.health_status(),
+            },
+        }

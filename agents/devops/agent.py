@@ -1,0 +1,87 @@
+"""DevOps agent wrapper."""
+
+from typing import Any
+
+from core.agent_base import AgentBase
+
+from .auto_heal import AutoHealer
+from .backup import BackupManager
+from .deployer import Deployer
+
+
+class DevOpsAgent(AgentBase):
+    supported_task_types = (
+        "deployment_task",
+        "run_backup",
+        "deploy_service",
+        "apply_security_updates",
+        "check_health",
+    )
+
+    def __init__(
+        self,
+        message_bus=None,
+        config: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(
+            name="devops",
+            description="Deployments, auto-healing, and backups",
+            message_bus=message_bus,
+            config=config,
+        )
+        auto_heal_config = self.get_config("auto_heal", {})
+        backup_config = self.get_config("backup", {})
+        self.auto_healer = AutoHealer(
+            services=auto_heal_config.get("services"),
+            check_interval=auto_heal_config.get("check_interval", 60),
+            max_restart_attempts=auto_heal_config.get("max_restart_attempts", 3),
+        )
+        self.backup_manager = BackupManager(
+            local_paths=backup_config.get("local_paths"),
+            retention_days=backup_config.get("retention_days", 30),
+        )
+        self.deployer = Deployer(compose_file=self.get_config("compose_file", "docker-compose.yml"))
+
+    async def on_start(self) -> None:
+        await self.auto_healer.start()
+
+    async def on_stop(self) -> None:
+        await self.auto_healer.stop()
+
+    async def execute(self, task: dict[str, Any]) -> dict[str, Any]:
+        task_type = task.get("type", "status")
+
+        if task_type == "status":
+            return {
+                "health": await self._check_services_health(),
+                "auto_heal": await self._auto_heal_failed_services(),
+                "backup": await self._run_backup_if_due(),
+                "cleanup": await self._cleanup_docker(),
+            }
+
+        if task_type == "run_backup":
+            return self.backup_manager.run_backup(label=task.get("label", "manual"))
+
+        if task_type == "deploy_service":
+            return self.deployer.deploy_service(task["service"])
+
+        if task_type == "apply_security_updates":
+            return self.deployer.apply_security_updates()
+
+        if task_type == "check_health":
+            return {"results": await self.auto_healer.run_once()}
+
+        self.tasks_failed += 1
+        return {"status": "unknown_task", "task_type": task_type}
+
+    async def _check_services_health(self) -> dict[str, Any]:
+        return self.deployer.get_service_status()
+
+    async def _auto_heal_failed_services(self) -> dict[str, Any]:
+        return {"restarted": await self.auto_healer.run_once()}
+
+    async def _run_backup_if_due(self) -> dict[str, Any]:
+        return self.backup_manager.run_backup(label="auto")
+
+    async def _cleanup_docker(self) -> dict[str, Any]:
+        return {"status": "skipped"}
